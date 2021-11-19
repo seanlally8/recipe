@@ -40,7 +40,7 @@ recipe_books = Table("recipe_books", metadata,
 titles = Table("titles", metadata,
                Column("id", Integer(), primary_key=True),
                Column("title", String(), nullable=False),
-               Column("url", String(), nullable=False)
+               Column("url", String(), nullable=False, unique=True)
                )
 
 users = Table("users", metadata,
@@ -105,33 +105,49 @@ def index():
             return report_error("Unable to locate the required ingredients at the given url")
 
         # TODO write a condition to see if that url already exists in the database == maybe even right after url is defined above?
+        stmt = select(titles.c.url).where(titles.c.url == url)
+        urls = connection.execute(stmt).fetchall()
+        
+        
+        # Update titles table, ingredients table and instructions table, as long as that url doesn't already exist
+        # This condition ensures that we don't duplicate recipes in the database.
+        if len(urls) != 1:
+            stmt = insert(titles).values(title=recipe_title[0].string.strip(), url=url)
+            connection.execute(stmt)
+            connection.commit()
 
-        # Insert recipe ttile and url into title table
-        stmt = insert(titles).values(title=recipe_title[0].string.strip(), url=url)
-        connection.execute(stmt)
-        connection.commit()
+            # Grab the title id from the titles table so we can plug it in as a Foreign Key in other tables
+            stmt = select(titles.c.id).where(titles.c.url == url)
+            title_id = connection.execute(stmt).fetchall()
+            title_id = title_id[0].id
 
-        # Grab the title id from the titles table so we can plug it in as a Foreign Key in other tables
+            # Insert ingredients into ingredients table.
+            for ingredient in ingredients_data:
+
+                # Stop at Salt, since everything after Salt is unnecessary information.
+                if ingredient.string.strip().startswith("Salt"):
+                    break
+                stmt = insert(ingredients).values(ingredient=ingredient.string.strip(), title_id=title_id)
+                connection.execute(stmt)
+            connection.commit()
+
+            # Insert instructions into instructions table
+            for (entry, title) in zip(instructions_body, instructions_title):
+                stmt = insert(instructions).values(instruction=entry.string.strip(),
+                                                   instruction_title=title.string.strip(),
+                                                   title_id=title_id)
+                connection.execute(stmt)
+            connection.commit() 
+
+        # Update the "recipe_books" table to link the recipe with the user
+        # First, get the title id TODO write a function in data model or buttress that just fetches the title_id
         stmt = select(titles.c.id).where(titles.c.url == url)
         title_id = connection.execute(stmt).fetchall()
         title_id = title_id[0].id
 
-        # Insert ingredients into ingredients table.
-        for ingredient in ingredients_data:
-
-            # Stop at Salt, since everything after Salt is unnecessary information.
-            if ingredient.string.strip().startswith("Salt"):
-                break
-            stmt = insert(ingredients).values(ingredient=ingredient.string.strip(), title_id=title_id)
-            connection.execute(stmt)
-        connection.commit()
-
-        # Insert instructions into instructions table
-        for (entry, title) in zip(instructions_body, instructions_title):
-            stmt = insert(instructions).values(instruction=entry.string.strip(),
-                                               instruction_title=title.string.strip(),
-                                               title_id=title_id)
-            connection.execute(stmt)
+        # Now insert the data TODO You should also check to make sure the user doesn't already have the recipe in their book
+        stmt = insert(recipe_books).values(user_id=session["user_id"], title_id=title_id) 
+        connection.execute(stmt)
         connection.commit()
 
         return redirect("/recipebook")
@@ -171,15 +187,15 @@ def login():
             return report_error("please provide a password")
 
         # Check to see if the username/password pair are in the users table
-        sel = select([users]).where(and_(users.c.username == username))
-        result = connection.execute(sel).fetchall()
-        print(result)
+        sel = select(users).where(and_(users.c.username == username))
+        user_account = connection.execute(sel).fetchall()
 
         # If they're not in the table, tell the user as much
-        if len(result) != 1 or not check_password_hash(result[0]["passhash"], password):
+        if len(user_account) != 1 or not check_password_hash(user_account[0]["passhash"], password):
             return report_error("username and/or password does not exist")
-        elif len(result) == 1:
-            session["name"] = username
+        elif len(user_account) == 1:
+            session["user_id"] = user_account[0].id
+
             return redirect("/")
 
 
@@ -230,11 +246,10 @@ def register():
         # Check to make sure the username doesn't exist
         sel = select([users.c.username]).where(users.c.username == username)
         rp = connection.execute(sel)
-        result = rp.fetchall()
-        print(result)
+        user_account = rp.fetchall()
 
         # If the username exists, let the user know so they can try again
-        if len(result) == 1:
+        if len(user_account) == 1:
             return report_error("username already exists")
 
         # Create a record for username and hash in users table
@@ -244,8 +259,13 @@ def register():
         )
         rp = connection.execute(ins)
         connection.commit()
+        
+        # Fetch the user's id number from the data base so we can use it later and log the sessionr
+        stmt = select(users.c.id).where(username == username)
+        user_id = connection.execute(stmt).fetchall()
+        
 
         # Log the username in the session
-        session["name"] = username
+        session["user_id"] = user_id[0].id
 
         return redirect("/")

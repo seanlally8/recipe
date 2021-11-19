@@ -3,6 +3,11 @@ TODOs
 app.py line 107
 write a condition to see if that url already exists in the database == maybe even right after url is defined above?
 
+app.py line 142
+write a function in data model or buttress that just fetches the title_id
+
+app.py line 148
+You should also check to make sure the user doesn't already have the recipe in their book
 
 buttress.py line 25 
 create a modal using bootstrap to update error.html (or maybe layout.html?) to be a bit more UX friendly
