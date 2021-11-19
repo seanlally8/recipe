@@ -15,7 +15,7 @@
 		<!-- Local stylesheet -->
 		<link href="/static/styles.css" rel="stylesheet">
 
-		<title>Recipe:{% block title %}{% endblock  %}</title>
+		<title>Recipe:{% block title %}{% endblock %}</title>
 	
 	</head>
 
@@ -23,12 +23,12 @@
 		<!-- Navigation Bar, slightly modified from bootstrap  -->	
 		<nav class="navbar navbar-expand-md navbar-dark bg-dark">
 		  <div class="container-fluid">
-			<a class="navbar-brand" href="#">Recipe</a>
+			<a class="navbar-brand" href="/">Recipe</a>
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
 			  <span class="navbar-toggler-icon"></span>
 			</button>
 			<div class="collapse navbar-collapse" id="navbarSupportedContent">
-			{% if session.user_id  %}
+			{% if session.name  %}
 			  <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 				<li class="nav-item">
 				  <a class="nav-link" href="/recipebook" role="button">
@@ -68,9 +68,10 @@
 			{% block main %}{% endblock %}
 		</main>
 		
-		<footer>
-			<div class="small text-center">
-				MIT License 2021
+		<footer class="position-absolute bottom-0 w-100">
+			<div class="text-center text-muted">
+				<p class="small">MIT License Copyright (c) 2021 Sean Lally</p>
+				<p class="small">Page Format Heavily Inspired by <a class="text-muted" href="https://cs50.harvard.edu/x/2021/psets/9/finance/" target="_blank">CS50 Course Material</a></p>
 			</div>
 		</footer>
 

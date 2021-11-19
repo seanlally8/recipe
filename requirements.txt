@@ -2,3 +2,5 @@ Flask
 Flask_Session
 SQLAlchemy
 SQLAlchemy.orm
+requests
+bs4
