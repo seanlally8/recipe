@@ -104,12 +104,11 @@ def index():
         if recipe_title is None or ingredients_data is None or instructions_title is None or instructions_body is None:
             return report_error("Unable to locate the required ingredients at the given url")
 
-        # TODO write a condition to see if that url already exists in the database == maybe even right after url is defined above?
+        # Attempt to fetch the url provided by the user
         stmt = select(titles.c.url).where(titles.c.url == url)
         urls = connection.execute(stmt).fetchall()
         
-        
-        # Update titles table, ingredients table and instructions table, as long as that url doesn't already exist
+        # As long as that url doesn't already exist, update titles table, ingredients table and instructions table, 
         # This condition ensures that we don't duplicate recipes in the database.
         if len(urls) != 1:
             stmt = insert(titles).values(title=recipe_title[0].string.strip(), url=url)
@@ -145,10 +144,16 @@ def index():
         title_id = connection.execute(stmt).fetchall()
         title_id = title_id[0].id
 
-        # Now insert the data TODO You should also check to make sure the user doesn't already have the recipe in their book
-        stmt = insert(recipe_books).values(user_id=session["user_id"], title_id=title_id) 
-        connection.execute(stmt)
-        connection.commit()
+        # Now insert the data 
+        recipe_check = select(recipe_books).where(and_(recipe_books.c.title_id == title_id, recipe_books.c.user_id == session["user_id"]))
+        recipe_check = connection.execute(recipe_check).fetchall()
+        
+        if len(recipe_check) != 1: 
+            stmt = insert(recipe_books).values(user_id=session["user_id"], title_id=title_id) 
+            connection.execute(stmt)
+            connection.commit()
+        else:
+            return report_error("you already have that recipe in your library")
 
         return redirect("/recipebook")
 
