@@ -4,3 +4,4 @@ SQLAlchemy
 SQLAlchemy.orm
 requests
 bs4
+gunicorn
