@@ -161,7 +161,12 @@ def index():
 @app.route("/recipebook")
 @login_required
 def recipebook():
-    return render_template("recipebook.html")
+
+    stmt = select(titles.c.title).where.filter(titles.c.id.in_(select(recipe_books.c.title_id).where(recipe_books.c.user_id == session["user_id"])))
+    recipe_titles = connection.execute(stmt).fetchall()
+    
+
+    return render_template("recipebook.html", titles=recipe_titles)
 
 
 @app.route("/login", methods=["GET", "POST"])
