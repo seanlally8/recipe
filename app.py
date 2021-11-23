@@ -7,6 +7,7 @@ from flask_session import Session
 from sqlalchemy import (Column, ForeignKey, Integer, MetaData, String, Table,
                         and_, create_engine, insert, select)
 from werkzeug.security import check_password_hash, generate_password_hash
+from PIL import Image
 
 from buttress import login_required, report_error
 
@@ -75,98 +76,152 @@ def index():
     # If user submits forms on homepage,
     # produce entry in recipe book
     if request.method == "POST":
-
-        # Store recipe url provided by user in
-        # variable for readability and ease of coding
-        url = request.form.get("url")
-
-        # Check for proper url format. This section might benefit from some regular expression magic.
-        if not url.startswith("http"):
-            return report_error("not a url")
-
-        # Fetch contents of url
-        load = requests.get(url)
-
-        # Create an object containing the html Document Object Model (DOM) from the url entered above
-        soup = BeautifulSoup(load.text, "lxml")
-
-        # Grab the recipe title from the DOM
-        recipe_title = soup.select("h1.c-recipe-details-header__title")
-
-        # Grab the ingredients list from the DOM
-        ingredients_data = soup.select("ol > li")
-
-        # Grab the instructions from the DOM
-        instructions_title = soup.select("div.c-recipe-step__title.c-heading.c-heading--brand-7")
-        instructions_body = soup.select("div.col-12 > p")
-
-        # Check to make sure the previous methods returned some value
-        if recipe_title is None or ingredients_data is None or instructions_title is None or instructions_body is None:
-            return report_error("Unable to locate the required ingredients at the given url")
-
-        # Attempt to fetch the url provided by the user
-        stmt = select(titles.c.url).where(titles.c.url == url)
-        urls = connection.execute(stmt).fetchall()
         
-        # As long as that url doesn't already exist, update titles table, ingredients table and instructions table, 
-        # This condition ensures that we don't duplicate recipes in the database.
-        if len(urls) != 1:
-            stmt = insert(titles).values(title=recipe_title[0].string.strip(), url=url)
-            connection.execute(stmt)
-            connection.commit()
+        # if url was entered, parse the html of the given page 
+        if request.form.get("url"): 
+            
+            url = request.form.get("url")
 
-            # Grab the title id from the titles table so we can plug it in as a Foreign Key in other tables
+            # Check for proper url format. This section might benefit from some regular expression magic.
+            if not url.startswith("http"):
+                return report_error("not a url")
+
+            # Fetch contents of url
+            load = requests.get(url)
+
+            # Create an object containing the html Document Object Model (DOM) from the url entered above
+            soup = BeautifulSoup(load.text, "lxml")
+
+            # Grab the recipe title from the DOM
+            recipe_title = soup.select("h1.c-recipe-details-header__title")
+
+            # Grab the ingredients list from the DOM
+            ingredients_data = soup.select("ol > li")
+
+            # Grab the instructions from the DOM
+            instructions_title = soup.select("div.c-recipe-step__title.c-heading.c-heading--brand-7")
+            instructions_body = soup.select("div.col-12 > p")
+
+            # Check to make sure the previous methods returned some value
+            if not recipe_title or not ingredients_data or not instructions_title or not instructions_body:
+                return report_error("Unable to locate the required ingredients at the given url")
+
+            # Attempt to fetch the url provided by the user
+            stmt = select(titles.c.url).where(titles.c.url == url)
+            urls = connection.execute(stmt).fetchall()
+
+            # As long as that url doesn't already exist, update titles table, ingredients table and instructions table,
+            # This condition ensures that we don't duplicate recipes in the database.
+            if len(urls) != 1:
+                stmt = insert(titles).values(title=recipe_title[0].string.strip(), url=url)
+                connection.execute(stmt)
+                connection.commit()
+
+                # Grab the title id from the titles table so we can plug it in as a Foreign Key in other tables
+                stmt = select(titles.c.id).where(titles.c.url == url)
+                title_id = connection.execute(stmt).fetchall()
+                title_id = title_id[0].id
+
+                # Insert ingredients into ingredients table.
+                for ingredient in ingredients_data:
+
+                    # Stop at Salt, since everything after Salt is unnecessary information.
+                    if ingredient.string.strip().startswith("Salt"):
+                        break
+                    stmt = insert(ingredients).values(ingredient=ingredient.string.strip(), title_id=title_id)
+                    connection.execute(stmt)
+                connection.commit()
+
+                # Insert instructions into instructions table
+                for (entry, title) in zip(instructions_body, instructions_title):
+                    stmt = insert(instructions).values(instruction=entry.string.strip(),
+                                                       instruction_title=title.string.strip(),
+                                                       title_id=title_id)
+                    connection.execute(stmt)
+                connection.commit()
+
+            # Update the "recipe_books" table to link the recipe with the user
+            # First, get the title id TODO write a function in data model or buttress that just fetches the title_id
             stmt = select(titles.c.id).where(titles.c.url == url)
             title_id = connection.execute(stmt).fetchall()
             title_id = title_id[0].id
 
-            # Insert ingredients into ingredients table.
-            for ingredient in ingredients_data:
+            # Now attempt to select the recipe title from this user's library
+            recipe_check = select(recipe_books).where(and_(recipe_books.c.title_id == title_id,
+                                                           recipe_books.c.user_id == session["user_id"]))
+            recipe_check = connection.execute(recipe_check).fetchall()
 
-                # Stop at Salt, since everything after Salt is unnecessary information.
-                if ingredient.string.strip().startswith("Salt"):
-                    break
-                stmt = insert(ingredients).values(ingredient=ingredient.string.strip(), title_id=title_id)
+            # If the recipe isn't in their library, add it.
+            if len(recipe_check) != 1:
+                stmt = insert(recipe_books).values(user_id=session["user_id"], title_id=title_id)
                 connection.execute(stmt)
-            connection.commit()
+                connection.commit()
+                
+                # Send the user to their homepage with a list of their recipes
+                return redirect("/recipebook")
 
-            # Insert instructions into instructions table
-            for (entry, title) in zip(instructions_body, instructions_title):
-                stmt = insert(instructions).values(instruction=entry.string.strip(),
-                                                   instruction_title=title.string.strip(),
-                                                   title_id=title_id)
-                connection.execute(stmt)
-            connection.commit() 
+            # Otherwise return an error message telling them they already have it.
+            else:
+                return report_error("you already have that recipe in your library")
 
-        # Update the "recipe_books" table to link the recipe with the user
-        # First, get the title id TODO write a function in data model or buttress that just fetches the title_id
-        stmt = select(titles.c.id).where(titles.c.url == url)
-        title_id = connection.execute(stmt).fetchall()
-        title_id = title_id[0].id
-
-        # Now insert the data 
-        recipe_check = select(recipe_books).where(and_(recipe_books.c.title_id == title_id, recipe_books.c.user_id == session["user_id"]))
-        recipe_check = connection.execute(recipe_check).fetchall()
-        
-        if len(recipe_check) != 1: 
-            stmt = insert(recipe_books).values(user_id=session["user_id"], title_id=title_id) 
-            connection.execute(stmt)
-            connection.commit()
-        else:
-            return report_error("you already have that recipe in your library")
+        # TODO find a way to access the picture taken by the user
+        img_file = request.files["img-file"]
+        print("you're here")
+        with Image.open(img_file) as img:
+            Image.save(img_file)
 
         return redirect("/recipebook")
 
-
-@app.route("/recipebook")
+@app.route("/recipebook", methods=["GET", "POST"])
 @login_required
 def recipebook():
+    '''
+    Recipe book provides the user with a select menu containing all their recipes.
+    When they select one and press the "let's cook!" button,
+    a screen appears displaying the desired recipe
+    '''
 
-    stmt = select(titles.c.title).where.filter(titles.c.id.in_(select(recipe_books.c.title_id).where(recipe_books.c.user_id == session["user_id"])))
-    recipe_titles = connection.execute(stmt).fetchall()
-    
+    # If user arrives via GET (that is, if they've clicked on "Book o' Recipes")
+    # display a select menu with all their recipes
+    if request.method == "GET":
 
-    return render_template("recipebook.html", titles=recipe_titles)
+        # Fetch the user's recipe titles to populate the select menu
+        stmt = select(titles.c.title).where(titles.c.id.in_(select(recipe_books.c.title_id).where(
+                                                                   recipe_books.c.user_id == session["user_id"]))).order_by(titles.c.title)
+        recipe_titles = connection.execute(stmt).fetchall()
+
+        # Capture the number of titles returned by the above query.
+        # We can use this to set a max size of the select menu
+        # before it becomes a scroll menu.
+        titles_list_length = len(recipe_titles)
+
+        return render_template("recipebook.html", recipe_titles=recipe_titles, titles_list_length=titles_list_length)
+
+    # If user submits post request (i.e. if they select a recipe to open),
+    # return a page with the desired recipe
+    if request.method == "POST":
+
+        # Retrieve the ingredients and instructions for the given recipe title
+        recipe_title = request.form.get("title")
+        stmt = select(ingredients.c.ingredient).where(ingredients.c.title_id.in_(select(titles.c.id).where(
+                                                                                 titles.c.title == recipe_title)))
+        recipe_ingredients = connection.execute(stmt).fetchall()
+
+        stmt = select(instructions.c.instruction_title).where(instructions.c.title_id.in_(
+                                                              select(titles.c.id).where(
+                                                                    titles.c.title == recipe_title)))
+        recipe_instruction_title = connection.execute(stmt).fetchall()
+
+        stmt = select(instructions.c.instruction).where(instructions.c.title_id.in_(select(titles.c.id).where(
+                                                                                    titles.c.title == recipe_title)))
+        recipe_instruction = connection.execute(stmt).fetchall()
+
+        stmt = select(titles.c.url).where(titles.c.title == recipe_title)
+        recipe_url = connection.execute(stmt).fetchone()
+
+        return render_template("recipe.html", recipe_title=recipe_title, recipe_ingredients=recipe_ingredients,
+                               instructions=zip(recipe_instruction_title, recipe_instruction),
+                               recipe_url=recipe_url)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -269,11 +324,10 @@ def register():
         )
         rp = connection.execute(ins)
         connection.commit()
-        
+
         # Fetch the user's id number from the data base so we can use it later and log the sessionr
         stmt = select(users.c.id).where(username == username)
         user_id = connection.execute(stmt).fetchall()
-        
 
         # Log the username in the session
         session["user_id"] = user_id[0].id

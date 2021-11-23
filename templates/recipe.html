@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ recipe_title }}{% endblock%}
+
+{% block main %}
+        
+<div class="row">
+	<div class="col-sm-0 col-md-2"></div>
+	<div class="col-sm-12 col-md-8">
+		<img src="/static/carrotman.jpeg" alt="picture of man dressed as carrot" class="img-fluid" >
+		<div class="my-5 mx-2">
+			<h1>{{ recipe_title }}</h1>
+			<br>
+			<div class="border-bottom ps-3 pb-3">
+				<h3 class="text-start">INGREDIENTS</h3>
+			</div>
+			<ul class="list-group list-group-flush">
+				{% for ingredient in recipe_ingredients %}
+					<li class="list-group-item text-start">{{ ingredient.ingredient }}</li>	
+				{% endfor %}
+			</ul>
+		</div>
+		<div class="mx-2">
+			<div class="ps-3 mb-3">
+				<h3 class="text-start">INSTRUCTIONS</h3>
+			</div>
+			<ul class="list-group list-group-numbered">
+			{% for title, instruction in instructions %}
+				<li class="list-group-item d-flex align-items-start">
+					<div class="ms-2 me-auto text-start">
+						<div class="fw-bold">{{ title.instruction_title }}</div>
+					{{ instruction.instruction }}
+					</div>
+				</li>
+			{% endfor %}
+			</ul>
+			<small><a href="{{ recipe_url.url }}">Recipe Source</a></small>
+		</div>
+	</div>
+	<div class="col-sm-0 col-md-2"></div>
+</div>
+
+{% endblock %}
+                  

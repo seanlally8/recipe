@@ -3,16 +3,34 @@
 {% block title %}Home{% endblock%}
 
 {% block main %}
-
+	
+	<div class="my-5 pt-5">
 		<h1>RECIPE</h1>
 		<br>	
 		<form action="/" method="post" >
 			<div class="form-group p-2">
 				<input type="text" autofocus class="form-control" name="url" placeholder="Recipe URL">
 			</div>
+			<br>
 			<div class="p-2">
 				<input type="submit" class="btn btn-dark" value="Log Your Recipe!">
 			</div>
+			<div class="p-2">
+				<input type="file" accept="image/*" capture="environment" id="file-upload" name="img-file">
+				<input type="submit" value="Upload">
+			</div>	
 		</form>
+	</div>
+
+			<script>
+
+				let input = document.getElementById('file-upload');
+
+				input.addEventListener('change', (ev) => {
+						console.dir(input.files[0]);
+						let img = document.getElementById('img');
+						img.src = URL.createObjectURL(input.files[0]);
+						})
+			</script>
 
 {% endblock %}

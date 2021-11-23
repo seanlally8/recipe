@@ -9,19 +9,22 @@
 		<!-- Bootstrap CSS -->
 		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 
+		<!-- Font Awesome icon library -->
+		<script src="https://kit.fontawesome.com/0453863c45.js" crossorigin="anonymous"></script>
+
 		<!-- https://favicon.io/favicon-converter/ -->
 	 	<link href="/static/favicon.ico" rel="icon">
 
 		<!-- Local stylesheet -->
 		<link href="/static/styles.css" rel="stylesheet">
 
-		<title>Recipe:{% block title %}{% endblock %}</title>
+		<title>Recipe: {% block title %}{% endblock %}</title>
 	
 	</head>
 
 	<body>
 		<!-- Navigation Bar, slightly modified from bootstrap  -->	
-		<nav class="navbar navbar-expand-md navbar-dark bg-dark">
+		<nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
 		  <div class="container-fluid">
 			<a class="navbar-brand" href="/">Recipe</a>
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,14 +67,13 @@
 		  </div>
 		</nav>
 		
-		<main class="container p-5">
+		<main class="p-0 m-auto">
 			{% block main %}{% endblock %}
 		</main>
 		
-		<footer class="position-relative bottom-0 w-100">
+		<footer class="position-relative mt-5 bottom-0 w-100">
 			<div class="text-center text-muted">
 				<p class="small">MIT License Copyright (c) 2021 Sean Lally</p>
-				<p class="small">Page Format Heavily Inspired by <a class="text-muted" href="https://cs50.harvard.edu/x/2021/psets/9/finance/" target="_blank">CS50 Course Material</a></p>
 			</div>
 		</footer>
 

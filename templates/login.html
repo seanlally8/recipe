@@ -4,14 +4,16 @@
 
 {% block main %}
 
-<form action="/login" method="post">
-	<div class="form-group mx-auto pb-2">
-		<input type="text" autocomplete="off" class="form-control" name="username" placeholder="Username">
+	<div class="my-5 pt-5">
+		<form action="/login" method="post">
+			<div class="form-group pb-2">
+				<input type="text" autocomplete="off" class="form-control" name="username" placeholder="Username">
+			</div>
+			<div class="form-group mb-2">
+				<input type="password" autocomplete="off" class="form-control" name="password" placeholder="Password">
+			</div>
+			<button type="submit" class="btn btn-dark">Log In</button>
+		</form>
 	</div>
-	<div class="form-group mb-2">
-		<input type="password" autocomplete="off" class="form-control" name="password" placeholder="Password">
-	</div>
-	<button type="submit" class="btn btn-dark">Log In</button>
-</form>
 
 {% endblock %}

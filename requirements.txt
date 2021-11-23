@@ -5,3 +5,6 @@ SQLAlchemy.orm
 requests
 bs4
 gunicorn
+pytesseract
+opencv-python
+Pillow
