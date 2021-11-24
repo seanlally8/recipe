@@ -1,6 +1,16 @@
-<!DOCTYPE html> 
+<!--
+This is the layout that will act as the basis for all our webpages. It consists
+of 3 basic levels:
+ 	1. The header, which is a navbar
+	2. The main section, which is the primary content of each page
+	3. The footer, which just contains copyright info at the moment
 
-<html lang="en"> 
+This page is extended with flask jinja by each of the other html pages
+-->
+
+<!DOCTYPE html>
+
+<html lang="en">
 
 	<head>
 		<meta charset="utf-8">
@@ -19,11 +29,12 @@
 		<link href="/static/styles.css" rel="stylesheet">
 
 		<title>Recipe: {% block title %}{% endblock %}</title>
-	
+
 	</head>
 
 	<body>
-		<!-- Navigation Bar, slightly modified from bootstrap  -->	
+
+		<!-- Navigation Bar, slightly modified from bootstrap  -->
 		<nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
 		  <div class="container-fluid">
 			<a class="navbar-brand" href="/">Recipe</a>
@@ -45,7 +56,7 @@
 			  <ul class="navbar-nav navbar-right">
 				<li class="nav-item">
 				  <a class="nav-link" href="/logout" role="button">
-					Logout 
+					Logout
 				  </a>
 				</li>
 			  </ul>
@@ -53,12 +64,12 @@
 			  <ul class="nav navbar-nav ms-auto">
 				<li class="nav-item">
 				  <a class="nav-link" href="/register" role="button">
-					Register 
+					Register
 				  </a>
 				</li>
 				<li class="nav-item">
 				  <a class="nav-link" href="/login" role="button">
-					Login 
+					Login
 				  </a>
 				</li>
 			  </ul>
@@ -66,11 +77,14 @@
 			</div>
 		  </div>
 		</nav>
-		
+
+
+		<!-- This is the meat of the page, to be filled in by the html templates (siblings of the current file) -->
 		<main class="p-0 m-auto">
 			{% block main %}{% endblock %}
 		</main>
-		
+
+		<!-- Simple footer with copyright info -->
 		<footer class="position-relative mt-5 bottom-0 w-100">
 			<div class="text-center text-muted">
 				<p class="small">MIT License Copyright (c) 2021 Sean Lally</p>

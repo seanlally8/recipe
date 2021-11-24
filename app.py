@@ -8,6 +8,9 @@ from sqlalchemy import (Column, ForeignKey, Integer, MetaData, String, Table,
                         and_, create_engine, insert, select)
 from werkzeug.security import check_password_hash, generate_password_hash
 import cv2
+import numpy as np
+import pytesseract
+from PIL import Image
 
 from buttress import login_required, report_error
 
@@ -102,7 +105,7 @@ def index():
             instructions_title = soup.select("div.c-recipe-step__title.c-heading.c-heading--brand-7")
             instructions_body = soup.select("div.col-12 > p")
 
-            # Check to make sure the previous methods returned some value
+            # Check to make sure the last 3 'grabs' returned some value
             if not recipe_title or not ingredients_data or not instructions_title or not instructions_body:
                 return report_error("Unable to locate the required ingredients at the given url")
 
@@ -110,7 +113,7 @@ def index():
             stmt = select(titles.c.url).where(titles.c.url == url)
             urls = connection.execute(stmt).fetchall()
 
-            # As long as that url doesn't already exist, update titles table, ingredients table and instructions table,
+            # If the url isn't in the database, update titles table, ingredients table and instructions table,
             # This condition ensures that we don't duplicate recipes in the database.
             if len(urls) != 1:
                 stmt = insert(titles).values(title=recipe_title[0].string.strip(), url=url)
@@ -141,43 +144,93 @@ def index():
                 connection.commit()
 
             # Update the "recipe_books" table to link the recipe with the user
-            # First, get the title id TODO write a function in data model or buttress that just fetches the title_id
+            # To do that, we first get the title id TODO write a function in data model or buttress that just fetches the title_id
             stmt = select(titles.c.id).where(titles.c.url == url)
             title_id = connection.execute(stmt).fetchall()
             title_id = title_id[0].id
 
-            # Now attempt to select the recipe title from this user's library
+            # Then, with the title_id, we attempt to select the recipe title from this user's library
             recipe_check = select(recipe_books).where(and_(recipe_books.c.title_id == title_id,
                                                            recipe_books.c.user_id == session["user_id"]))
             recipe_check = connection.execute(recipe_check).fetchall()
 
             # If the recipe isn't in their library, add it.
-            if len(recipe_check) != 1:
+            if len(recipe_check) < 1:
                 stmt = insert(recipe_books).values(user_id=session["user_id"], title_id=title_id)
                 connection.execute(stmt)
                 connection.commit()
                 # Send the user to their homepage with a list of their recipes
                 return redirect("/recipebook")
 
-            # Otherwise return an error message telling them they already have it.
+            # If it is there, return an error message telling the user they already have it.
             else:
                 return report_error("you already have that recipe in your library")
 
-        # If an image file was submitted, process the image using Optical Character Recognition then
-        # add the recipe to the user's recipe book
+        # If an image file was submitted via post, process the image opencv, convert
+        # the image to string using OCR, then add the recipe to the user's recipe book
         elif request.files["image"]:
 
+            # Fetch the image from the "post" request
             image = request.files["image"]
 
             # Extract extension. Found this method in Flask docs:
             # https://flask.palletsprojects.com/en/2.0.x/patterns/fileuploads/
             ext = image.filename.rsplit(".", 1)[1].lower()
 
+            # Save the image to filesystem
             img = image.save(f"tmpimage.{ext}")
 
+            # Read the file into memory so we can manipulate the image with code
             filename = f"tmpimage.{ext}"
-
             img = cv2.imread(filename)
+
+            # Grayscale the image in preparation for binarization (the process of turning the
+            # image black and white). Much of the code leading up to the pytesseract function
+            # derives from the youtube channel, "Python Tutorials for Digital Humanities," 
+            # https://www.youtube.com/watch?v=ADV-AjAXHdc&t=1122
+            def grayscale(image):
+                return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+            gray_image = grayscale(img)
+            cv2.imwrite("gray.jpg", gray_image)
+
+            # Binarize the image            
+            thresh, im_bw = cv2.threshold(gray_image, 110, 130, cv2.THRESH_BINARY)
+            cv2.imwrite("b2_image.jpg", im_bw)
+
+            # Remove any noise from the image
+            def noise_removal(image):
+                kernel = np.ones((1, 1), np.uint8)
+                image = cv2.dilate(image, kernel, iterations=1)
+                kernel = np.ones((1, 1), np.uint8)
+                image = cv2.erode(image, kernel, iterations=1)
+                image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel)
+                image = cv2.medianBlur(image, 3)
+                return (image)
+
+            no_noise = noise_removal(im_bw)
+            cv2.imwrite("no_noise.jpg", no_noise)
+
+            # Dilate (or thicken) the image
+            def thick_font(image):
+                image = cv2.bitwise_not(image)
+                kernel = np.ones((2, 2), np.uint8)
+                image = cv2.dilate(image, kernel, iterations=1)
+                image = cv2.bitwise_not(image)
+                return (image) 
+
+            dilated_image = thick_font(no_noise)
+            cv2.imwrite("dilated.jpg", dilated_image)
+
+            final_image = "dilated.jpg"
+
+            # Apply the tesseract OCR to the image to produce 
+            # string.
+            recipe_str = pytesseract.image_to_string(Image.open(final_image))
+
+            # THIS IS A TEST
+            with open("test.txt", "w") as text_test:
+                text_test.write(recipe_str)
 
             return redirect("/recipebook")
 

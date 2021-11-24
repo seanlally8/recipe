@@ -3,10 +3,11 @@
 {% block title %}Home{% endblock%}
 
 {% block main %}
-	
+
+	<!-- Allow user to fetch a recipe by URL -->
 	<div class="my-5 pt-5">
 		<h1>RECIPE</h1>
-		<br>	
+		<br>
 		<form action="/" method="post" >
 			<div class="form-group p-2">
 				<input type="text" autofocus class="form-control" name="url" placeholder="Recipe URL">
@@ -16,11 +17,13 @@
 				<input type="submit" class="btn btn-dark" value="Log Your Recipe!">
 			</div>
 		</form>
+
+		<!-- Offer the user the option to upload a photo of a recupe (on desktop) and take a photo (on mobile) -->
 		<form action="/" method="post" enctype="multipart/form-data">
 			<div class="p-2">
 				<input type="file" accept="image/*" capture="environment" id="file-upload" name="image">
 				<input type="submit" value="Upload">
-			</div>	
+			</div>
 		</form>
 	</div>
 
