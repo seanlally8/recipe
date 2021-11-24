@@ -7,7 +7,7 @@ from flask_session import Session
 from sqlalchemy import (Column, ForeignKey, Integer, MetaData, String, Table,
                         and_, create_engine, insert, select)
 from werkzeug.security import check_password_hash, generate_password_hash
-from PIL import Image
+import cv2
 
 from buttress import login_required, report_error
 
@@ -76,10 +76,10 @@ def index():
     # If user submits forms on homepage,
     # produce entry in recipe book
     if request.method == "POST":
-        
-        # if url was entered, parse the html of the given page 
-        if request.form.get("url"): 
-            
+
+        # if url was entered, parse the html of the given page
+        if request.form.get("url"):
+
             url = request.form.get("url")
 
             # Check for proper url format. This section might benefit from some regular expression magic.
@@ -156,7 +156,6 @@ def index():
                 stmt = insert(recipe_books).values(user_id=session["user_id"], title_id=title_id)
                 connection.execute(stmt)
                 connection.commit()
-                
                 # Send the user to their homepage with a list of their recipes
                 return redirect("/recipebook")
 
@@ -164,13 +163,24 @@ def index():
             else:
                 return report_error("you already have that recipe in your library")
 
-        # TODO find a way to access the picture taken by the user
-        img_file = request.files["img-file"]
-        print("you're here")
-        with Image.open(img_file) as img:
-            Image.save(img_file)
+        # If an image file was submitted, process the image using Optical Character Recognition then
+        # add the recipe to the user's recipe book
+        elif request.files["image"]:
 
-        return redirect("/recipebook")
+            image = request.files["image"]
+
+            # Extract extension. Found this method in Flask docs:
+            # https://flask.palletsprojects.com/en/2.0.x/patterns/fileuploads/
+            ext = image.filename.rsplit(".", 1)[1].lower()
+
+            img = image.save(f"tmpimage.{ext}")
+
+            filename = f"tmpimage.{ext}"
+
+            img = cv2.imread(filename)
+
+            return redirect("/recipebook")
+
 
 @app.route("/recipebook", methods=["GET", "POST"])
 @login_required
@@ -178,7 +188,7 @@ def recipebook():
     '''
     Recipe book provides the user with a select menu containing all their recipes.
     When they select one and press the "let's cook!" button,
-    a screen appears displaying the desired recipe
+    a screen appears displaying the desired recipe.
     '''
 
     # If user arrives via GET (that is, if they've clicked on "Book o' Recipes")
@@ -192,7 +202,7 @@ def recipebook():
 
         # Capture the number of titles returned by the above query.
         # We can use this to set a max size of the select menu
-        # before it becomes a scroll menu.
+        # before it overflows and becomes scrollable.
         titles_list_length = len(recipe_titles)
 
         return render_template("recipebook.html", recipe_titles=recipe_titles, titles_list_length=titles_list_length)
@@ -219,6 +229,8 @@ def recipebook():
         stmt = select(titles.c.url).where(titles.c.title == recipe_title)
         recipe_url = connection.execute(stmt).fetchone()
 
+        # Pass the retrieved data into the recipe.html template and return that page. The user will now have a page
+        # containing a clear readable recipe from their book o' recipes.
         return render_template("recipe.html", recipe_title=recipe_title, recipe_ingredients=recipe_ingredients,
                                instructions=zip(recipe_instruction_title, recipe_instruction),
                                recipe_url=recipe_url)
