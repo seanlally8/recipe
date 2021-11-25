@@ -8,11 +8,10 @@ from sqlalchemy import (Column, ForeignKey, Integer, MetaData, String, Table,
                         and_, create_engine, insert, select)
 from werkzeug.security import check_password_hash, generate_password_hash
 import cv2
-import numpy as np
 import pytesseract
 from PIL import Image
 
-from buttress import login_required, report_error
+from buttress import login_required, report_error, image_preprocessing
 
 # Initate and configure flask app
 app = Flask(__name__)
@@ -162,12 +161,13 @@ def index():
                 # Send the user to their homepage with a list of their recipes
                 return redirect("/recipebook")
 
-            # If it is there, return an error message telling the user they already have it.
+            # If the reciper is in the library, return an error message telling the user they already have it.
             else:
                 return report_error("you already have that recipe in your library")
 
         # If an image file was submitted via post, process the image opencv, convert
-        # the image to string using OCR, then add the recipe to the user's recipe book
+        # the image to string using Optical Character Recognition (OCR), then add 
+        # the recipe to the user's recipe book
         elif request.files["image"]:
 
             # Fetch the image from the "post" request
@@ -175,7 +175,7 @@ def index():
 
             # Extract extension. Found this method in Flask docs:
             # https://flask.palletsprojects.com/en/2.0.x/patterns/fileuploads/
-            ext = image.filename.rsplit(".", 1)[1].lower()
+            ext = image.filename.rsplit(".", )[1].lower()
 
             # Save the image to filesystem
             img = image.save(f"tmpimage.{ext}")
@@ -184,51 +184,15 @@ def index():
             filename = f"tmpimage.{ext}"
             img = cv2.imread(filename)
 
-            # Grayscale the image in preparation for binarization (the process of turning the
-            # image black and white). Much of the code leading up to the pytesseract function
-            # derives from the youtube channel, "Python Tutorials for Digital Humanities," 
-            # https://www.youtube.com/watch?v=ADV-AjAXHdc&t=1122
-            def grayscale(image):
-                return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            # Prepare the image for 
+            image_preprocessing(img)
 
-            gray_image = grayscale(img)
-            cv2.imwrite("gray.jpg", gray_image)
 
-            # Binarize the image            
-            thresh, im_bw = cv2.threshold(gray_image, 110, 130, cv2.THRESH_BINARY)
-            cv2.imwrite("b2_image.jpg", im_bw)
-
-            # Remove any noise from the image
-            def noise_removal(image):
-                kernel = np.ones((1, 1), np.uint8)
-                image = cv2.dilate(image, kernel, iterations=1)
-                kernel = np.ones((1, 1), np.uint8)
-                image = cv2.erode(image, kernel, iterations=1)
-                image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel)
-                image = cv2.medianBlur(image, 3)
-                return (image)
-
-            no_noise = noise_removal(im_bw)
-            cv2.imwrite("no_noise.jpg", no_noise)
-
-            # Dilate (or thicken) the image
-            def thick_font(image):
-                image = cv2.bitwise_not(image)
-                kernel = np.ones((2, 2), np.uint8)
-                image = cv2.dilate(image, kernel, iterations=1)
-                image = cv2.bitwise_not(image)
-                return (image) 
-
-            dilated_image = thick_font(no_noise)
-            cv2.imwrite("dilated.jpg", dilated_image)
-
+            # Apply the tesseract OCR to the image to produce string.
             final_image = "dilated.jpg"
-
-            # Apply the tesseract OCR to the image to produce 
-            # string.
             recipe_str = pytesseract.image_to_string(Image.open(final_image))
 
-            # THIS IS A TEST
+            # Create text file containing the OCR output (for development)
             with open("test.txt", "w") as text_test:
                 text_test.write(recipe_str)
 
