@@ -8,10 +8,9 @@ from sqlalchemy import (Column, ForeignKey, Integer, MetaData, String, Table,
                         and_, create_engine, insert, select)
 from werkzeug.security import check_password_hash, generate_password_hash
 import cv2
-import pytesseract
 from PIL import Image
 
-from buttress import login_required, report_error, image_preprocessing
+from buttress import login_required, report_error, image_preprocessing, check_extension, parse_image, extract_strings
 
 # Initate and configure flask app
 app = Flask(__name__)
@@ -165,17 +164,16 @@ def index():
             else:
                 return report_error("you already have that recipe in your library")
 
-        # If an image file was submitted via post, process the image opencv, convert
-        # the image to string using Optical Character Recognition (OCR), then add 
+        # If an image file was submitted via post, process the image with opencv, convert
+        # the image to string using Optical Character Recognition (OCR)/pytesseract, then add 
         # the recipe to the user's recipe book
         elif request.files["image"]:
 
             # Fetch the image from the "post" request
             image = request.files["image"]
 
-            # Extract extension. Found this method in Flask docs:
-            # https://flask.palletsprojects.com/en/2.0.x/patterns/fileuploads/
-            ext = image.filename.rsplit(".", )[1].lower()
+            # Check for valid extension (.jpg or .png)
+            ext = check_extension(image)
 
             # Save the image to filesystem
             img = image.save(f"tmpimage.{ext}")
@@ -184,17 +182,21 @@ def index():
             filename = f"tmpimage.{ext}"
             img = cv2.imread(filename)
 
-            # Prepare the image for 
-            image_preprocessing(img)
+            # Prepare the image for OCR text recognition
+            processed_image = image_preprocessing(img)
 
+            # Create a list of image files, each containing a separate chunk of text
+            # from the original image
+            image_files = parse_image(processed_image)
 
-            # Apply the tesseract OCR to the image to produce string.
-            final_image = "dilated.jpg"
-            recipe_str = pytesseract.image_to_string(Image.open(final_image))
-
-            # Create text file containing the OCR output (for development)
-            with open("test.txt", "w") as text_test:
-                text_test.write(recipe_str)
+            # Produce a list of strings containing the OCRed text from each image in 
+            # image_files
+            recipe_strings = extract_strings(image_files)
+            
+            # TODO Iterate over strings and add text to appropriate table and column of database
+            for i in range(len(recipe_strings)):
+                pass
+                
 
             return redirect("/recipebook")
 
