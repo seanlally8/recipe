@@ -1,36 +1,33 @@
 from functools import wraps
 
-from flask import redirect, render_template, session
 import cv2
 import numpy as np
 import pytesseract
+from flask import redirect, render_template, session
 
 
-def check_extension(image):
+def check_extension(extension):
     '''
     This function checks to make sure the file format is acceptable
     '''
-
-    # Extract extension. Found this method in Flask docs:
     # https://flask.palletsprojects.com/en/2.0.x/patterns/fileuploads/
-    ext = image.filename.rsplit(".", )[1].lower()
-    if ext != "jpg" or ext != "png":
+    if extension != "jpg" or extension != "png":
         return report_error("not a valid file type - only jpg and png accepted")
     else:
-        return ext
+        return True
 
 def image_preprocessing(image):
     '''
-    This function prepares the image for OCR by doing the following:
+    This function prepares the image for OCR with the following steps:
 
-    1. grayscaling
-    2. binarizing (renders black/white)
-    3. rotating
-    4. cropping
-    3. removing noise
-    4. dilating (thickens font)
+    1. grayscale
+    2. binarize (renders black/white)
+    3. rotate
+    4. crop
+    3. remove noise
+    4. dilate (thickens font)
 
-    and returns the final dilated image
+    Then returns the final dilated image
 
     this code is largely based on, "Python Tutorials for Digital Humanities," 
     https://www.youtube.com/watch?v=ADV-AjAXHdc&t=1337
@@ -45,8 +42,7 @@ def image_preprocessing(image):
             
     '''
             
-    # Grayscale the image in preparation for binarization (the process of turning the
-    # image black and white).The code leading up to the pytesseract function
+    # Grayscale the image in preparation for binarization 
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     # Binarize the image            
@@ -76,14 +72,14 @@ def image_preprocessing(image):
     contours, hierarchy = cv2.findContours(im_bw, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
-        if h > 700:
+        if h > 3000:
             rotated = rotate_image(im_bw, c)
 
     # Crop the image
     contours, hierarchy = cv2.findContours(rotated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
-        if h > 700:
+        if h > 3000:
             cropped = rotated[y: y + h, x: x + w]
 
     # Remove noise from the image 
@@ -130,7 +126,7 @@ def parse_image(image):
 
     # Identify the larger blocks of text (this is the structural analysis part), 
     # crop out those blocks, and save them to disk -- each with their own file 
-    image_files = []
+    image_arrays = []
     contours, hierarchy = cv2.findContours(over_dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for i, c in enumerate(contours):
         x, y, w, h = cv2.boundingRect(c)
@@ -138,9 +134,9 @@ def parse_image(image):
             roi_image = image[y: y + h, x: x + w]
             filename = f"roi{i}.jpg"
             cv2.imwrite(filename, roi_image) 
-            image_files.append(cv2.imread(filename))
+            image_arrays.append(cv2.imread(filename))
 
-    return image_files
+    return image_arrays
 
 
 def extract_strings(newfiles):
@@ -155,7 +151,8 @@ def extract_strings(newfiles):
     for j in range(len(newfiles)):
         conf = r"--psm 6 --oem 1"
         text = pytesseract.image_to_string(newfiles[j], config=conf)
-        if "ingredients" in text.lower() or "directions" in text.lower():
+        if "ingredients" in text.lower() or "directions" in text.lower() or "dueelins" \
+            in text.lower() or "salt and pepper" in text.lower():
             string_list.append(text)
     
     return string_list

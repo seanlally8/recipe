@@ -1,5 +1,9 @@
+import glob
+import os
+import re
 from tempfile import mkdtemp
 
+import cv2
 import requests
 from bs4 import BeautifulSoup
 from flask import Flask, redirect, render_template, request, session
@@ -7,10 +11,9 @@ from flask_session import Session
 from sqlalchemy import (Column, ForeignKey, Integer, MetaData, String, Table,
                         and_, create_engine, insert, select)
 from werkzeug.security import check_password_hash, generate_password_hash
-import cv2
-from PIL import Image
 
-from buttress import login_required, report_error, image_preprocessing, check_extension, parse_image, extract_strings
+from buttress import (check_extension, extract_strings, image_preprocessing,
+                      login_required, parse_image, report_error)
 
 # Initate and configure flask app
 app = Flask(__name__)
@@ -78,7 +81,8 @@ def index():
     # produce entry in recipe book
     if request.method == "POST":
 
-        # if url was entered, parse the html of the given page
+        # if url was entered, parse the html of the given page and update database to include
+        # recipe information
         if request.form.get("url"):
 
             url = request.form.get("url")
@@ -157,10 +161,10 @@ def index():
                 stmt = insert(recipe_books).values(user_id=session["user_id"], title_id=title_id)
                 connection.execute(stmt)
                 connection.commit()
-                # Send the user to their homepage with a list of their recipes
+                # Send the user to their homepage where they will find a selectable list of their recipes
                 return redirect("/recipebook")
 
-            # If the reciper is in the library, return an error message telling the user they already have it.
+            # If the recipe is in the library, return an error message telling the user they already have it.
             else:
                 return report_error("you already have that recipe in your library")
 
@@ -172,8 +176,11 @@ def index():
             # Fetch the image from the "post" request
             image = request.files["image"]
 
+            # Extract extension
+            ext = image.filename.rsplit(".")[1].lower()
+
             # Check for valid extension (.jpg or .png)
-            ext = check_extension(image)
+            check_extension(ext)
 
             # Save the image to filesystem
             img = image.save(f"tmpimage.{ext}")
@@ -185,18 +192,35 @@ def index():
             # Prepare the image for OCR text recognition
             processed_image = image_preprocessing(img)
 
-            # Create a list of image files, each containing a separate chunk of text
+            # Create a list of image arrays, each containing a separate chunk of text
             # from the original image
-            image_files = parse_image(processed_image)
+            image_arrays = parse_image(processed_image)
 
-            # Produce a list of strings containing the OCRed text from each image in 
-            # image_files
-            recipe_strings = extract_strings(image_files)
+            # Produce a list of strings containing 
+            # the OCRed text from each image_array
+            recipe_strings = extract_strings(image_arrays)
             
-            # TODO Iterate over strings and add text to appropriate table and column of database
+            # Create 2 lists: one where each element is an ingredient
+            # and another where each element is an instruction
+            # TODO: you might not need to make recipe_strings before
+            # making instruction_list. You could instead handle
+            # the below in extract_strings()
             for i in range(len(recipe_strings)):
-                pass
-                
+                recipe_string = recipe_strings[i]
+                if "salt and pepper" in recipe_string.lower():
+                    instruction_list = re.split(r"[0-9]\.", recipe_string)
+                    print(instruction_list)
+                if "ingredients" in recipe_string.lower():
+                    pass
+            print()
+
+            for x, instruction in enumerate(instruction_list):
+                print(x)
+                print(str(instruction))
+            
+            # filelist = glob.glob("*.jpg")
+            # for filename in filelist:
+            #     os.remove(filename)
 
             return redirect("/recipebook")
 
