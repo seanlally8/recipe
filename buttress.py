@@ -148,12 +148,23 @@ def extract_strings(newfiles):
     # Convert each image to a string, and extract strings containing the word(s): 
     # "ingredients", "directions" and/or "instructions"
     string_list = []
+    CONF_STANDARD = 78
     for j in range(len(newfiles)):
         conf = r"--psm 6 --oem 1"
         text = pytesseract.image_to_string(newfiles[j], config=conf)
+        data = pytesseract.image_to_data(newfiles[j], config=config, output_type=Output.DICT)
         if "ingredients" in text.lower() or "directions" in text.lower() or "dueelins" \
             in text.lower() or "salt and pepper" in text.lower():
-            string_list.append(text)
+
+            for i in range(len(data["conf"])):
+                conf_sum += int(data["conf"][i])
+            conf_avg = conf_sum / len(data["conf"])
+            
+            if conf_avg < 78:
+                continue
+            
+            else:
+                string_list.append(text)
     
     return string_list
 

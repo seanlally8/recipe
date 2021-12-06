@@ -68,7 +68,7 @@ metadata.create_all(engine)
 @login_required
 def index():
     """
-    here, the user can enter a url containing a recipe in order to
+    The user can enter a url containing a recipe in order to
     add it to their 'Book o' Recipes'
     """
 
@@ -167,6 +167,8 @@ def index():
             # If the recipe is in the library, return an error message telling the user they already have it.
             else:
                 return report_error("you already have that recipe in your library")
+        
+        return report_error("no url sent.")
 
         # If an image file was submitted via post, process the image with opencv, convert
         # the image to string using Optical Character Recognition (OCR)/pytesseract, then add 
@@ -197,22 +199,20 @@ def index():
             image_arrays = parse_image(processed_image)
 
             # Produce a list of strings containing 
-            # the OCRed text from each image_array
+            # the OCRed text from each
             recipe_strings = extract_strings(image_arrays)
+
+            # Check to make sure extract_strings returns something
+            if len(recipe_strings) == 0:
+                return report_error("Highly uncertain about that image. Resubmit material, glareless and straight.")
+
             
-            # Create 2 lists: one where each element is an ingredient
-            # and another where each element is an instruction
-            # TODO: you might not need to make recipe_strings before
-            # making instruction_list. You could instead handle
-            # the below in extract_strings()
+            # Split ingredients and instruction into smaller units, so we can more 
+            # easily manipulate the data on the front-end
+            
             for i in range(len(recipe_strings)):
                 recipe_string = recipe_strings[i]
-                if "salt and pepper" in recipe_string.lower():
-                    instruction_list = re.split(r"[0-9]\.", recipe_string)
-                    print(instruction_list)
-                if "ingredients" in recipe_string.lower():
-                    pass
-            print()
+                instruction_list = recipe_string.split("\n\n", recipe_string)
 
             for x, instruction in enumerate(instruction_list):
                 print(x)
@@ -223,7 +223,9 @@ def index():
             #     os.remove(filename)
 
             return redirect("/recipebook")
-
+        
+        
+        return report_error("no image received.")
 
 @app.route("/recipebook", methods=["GET", "POST"])
 @login_required
