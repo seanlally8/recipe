@@ -25,11 +25,10 @@
 			<div class="ps-3 mb-3">
 				<h3 class="text-start">INSTRUCTIONS</h3>
 			</div>
-			<ul class="list-group list-group-numbered">
-			{% for title, instruction in instructions %}
+			<ul class="list-group">
+			{% for instruction in instructions %}
 				<li class="list-group-item d-flex align-items-start">
 					<div class="ms-2 me-auto text-start">
-						<div class="fw-bold">{{ title.instruction_title }}</div>
 					{{ instruction.instruction }}
 					</div>
 				</li>
