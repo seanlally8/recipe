@@ -148,8 +148,8 @@ def extract_strings(newfiles):
 
     # Convert each image to a string, and extract strings containing the word(s): 
     # "ingredients", "directions" and/or "instructions"
-    string_list = []
     CONF_STANDARD = 78
+    string_list = []
     conf_sum = 0
     for j in range(len(newfiles)):
         config = r"--psm 6 --oem 1"

@@ -25,7 +25,7 @@ Session(app)
 # Initiate metadata object so we can create Table objects to manipulate our data
 metadata = MetaData()
 
-# Create the table objects (corresponding recipe.db)
+# Create the table objects (corresponding to recipe.db)
 ingredients = Table("ingredients", metadata,
                     Column("title_id", Integer(), ForeignKey("titles.id")),
                     Column("ingredient", String(), nullable=False)
@@ -155,20 +155,15 @@ def index():
                 title_id = connection.execute(stmt).fetchall()
                 title_id = title_id[0].id
 
+                # Now we can create a row in the recipe_books table with the user id and the title id
                 stmt = insert(recipe_books).values(user_id=session["user_id"], title_id=title_id)
                 connection.execute(stmt)
                 connection.commit()
 
-            # Check to see if it's in their library 
-            stmt = select(titles.c.id).where(titles.c.url == url)
-            title_id = connection.execute(stmt).fetchall()
-            title_id = title_id[0].id
-
-            # Then, with the title_id, we attempt to select the recipe title from this user's library
+            # Check to see if the recipe is already in the user's library
             recipe_check = select(recipe_books).where(and_(recipe_books.c.title_id == title_id,
                                                         recipe_books.c.user_id == session["user_id"]))
             recipe_check = connection.execute(recipe_check).fetchall()
-
 
             # If the recipe is in the library, return an error message telling the user they already have it.
             if len(recipe_check) > 0:
