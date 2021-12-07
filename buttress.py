@@ -3,6 +3,7 @@ from functools import wraps
 import cv2
 import numpy as np
 import pytesseract
+from pytesseract import Output
 from flask import redirect, render_template, session
 
 
@@ -149,9 +150,10 @@ def extract_strings(newfiles):
     # "ingredients", "directions" and/or "instructions"
     string_list = []
     CONF_STANDARD = 78
+    conf_sum = 0
     for j in range(len(newfiles)):
-        conf = r"--psm 6 --oem 1"
-        text = pytesseract.image_to_string(newfiles[j], config=conf)
+        config = r"--psm 6 --oem 1"
+        text = pytesseract.image_to_string(newfiles[j], config=config)
         data = pytesseract.image_to_data(newfiles[j], config=config, output_type=Output.DICT)
         if "ingredients" in text.lower() or "directions" in text.lower() or "dueelins" \
             in text.lower() or "salt and pepper" in text.lower():
@@ -190,3 +192,6 @@ def report_error(message):
 
     # TODO create a modal using bootstrap to update error.html (or maybe layout.html?) to be a bit more UX friendly
     return render_template("error.html", message=message)
+
+def update_tables():
+

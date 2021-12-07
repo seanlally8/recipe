@@ -81,11 +81,13 @@ def index():
     # produce entry in recipe book
     if request.method == "POST":
 
-        # if url was entered, parse the html of the given page and update database to include
-        # recipe information
-        if request.form.get("url"):
+        url = request.form.get("url")
+        if not url and "image" not in request.files:
+            return report_error("no url sent.")
 
-            url = request.form.get("url")
+        # if url was entered, parse the html of the given page and update database to include
+        # recipe data
+        if request.form.get("url"):
 
             # Check for proper url format. This section might benefit from some regular expression magic.
             if not url.startswith("http"):
@@ -111,13 +113,13 @@ def index():
             if not recipe_title or not ingredients_data or not instructions_title or not instructions_body:
                 return report_error("Unable to locate the required ingredients at the given url")
 
-            # Attempt to fetch the url provided by the user
+            # Attempt to fetch the url, provided by the user, from the database
             stmt = select(titles.c.url).where(titles.c.url == url)
             urls = connection.execute(stmt).fetchall()
 
             # If the url isn't in the database, update titles table, ingredients table and instructions table,
             # This condition ensures that we don't duplicate recipes in the database.
-            if len(urls) != 1:
+            if not len(urls):
                 stmt = insert(titles).values(title=recipe_title[0].string.strip(), url=url)
                 connection.execute(stmt)
                 connection.commit()
@@ -145,33 +147,35 @@ def index():
                     connection.execute(stmt)
                 connection.commit()
 
-            # Update the "recipe_books" table to link the recipe with the user
-            # To do that, we first get the title id TODO write a function in data model or buttress that just fetches the title_id
+                # Since the recipe wasn't in the database, then the user doesn't have it in their library
+                # So we add it.
+
+                # To do that, we first get the title id 
+                stmt = select(titles.c.id).where(titles.c.url == url)
+                title_id = connection.execute(stmt).fetchall()
+                title_id = title_id[0].id
+
+                stmt = insert(recipe_books).values(user_id=session["user_id"], title_id=title_id)
+                connection.execute(stmt)
+                connection.commit()
+
+            # Check to see if it's in their library 
             stmt = select(titles.c.id).where(titles.c.url == url)
             title_id = connection.execute(stmt).fetchall()
             title_id = title_id[0].id
 
             # Then, with the title_id, we attempt to select the recipe title from this user's library
             recipe_check = select(recipe_books).where(and_(recipe_books.c.title_id == title_id,
-                                                           recipe_books.c.user_id == session["user_id"]))
+                                                        recipe_books.c.user_id == session["user_id"]))
             recipe_check = connection.execute(recipe_check).fetchall()
 
-            # If the recipe isn't in their library, add it.
-            if len(recipe_check) < 1:
-                stmt = insert(recipe_books).values(user_id=session["user_id"], title_id=title_id)
-                connection.execute(stmt)
-                connection.commit()
-                # Send the user to their homepage where they will find a selectable list of their recipes
-                return redirect("/recipebook")
 
             # If the recipe is in the library, return an error message telling the user they already have it.
-            else:
-                return report_error("you already have that recipe in your library")
-        
-        return report_error("no url sent.")
+            if len(recipe_check) > 0:
+                    return report_error("you already have that recipe in your library")
 
         # If an image file was submitted via post, process the image with opencv, convert
-        # the image to string using Optical Character Recognition (OCR)/pytesseract, then add 
+        # the image to string using Optical Character Recognition (OCR)/pytesseract, then add
         # the recipe to the user's recipe book
         elif request.files["image"]:
 
@@ -198,34 +202,34 @@ def index():
             # from the original image
             image_arrays = parse_image(processed_image)
 
-            # Produce a list of strings containing 
+            # Produce a list of strings containing
             # the OCRed text from each
             recipe_strings = extract_strings(image_arrays)
 
             # Check to make sure extract_strings returns something
             if len(recipe_strings) == 0:
+                filelist = glob.glob("*.jpg")
+                for filename in filelist:
+                    os.remove(filename)
                 return report_error("Highly uncertain about that image. Resubmit material, glareless and straight.")
 
-            
-            # Split ingredients and instruction into smaller units, so we can more 
+            # Split ingredients and instruction into smaller units, so we can more
             # easily manipulate the data on the front-end
-            
             for i in range(len(recipe_strings)):
                 recipe_string = recipe_strings[i]
-                instruction_list = recipe_string.split("\n\n", recipe_string)
+                instruction_list = recipe_string.split("\n\n")
 
-            for x, instruction in enumerate(instruction_list):
-                print(x)
-                print(str(instruction))
-            
+            for instruction in instruction_list:
+                stmt = insert(instructions).values(
+
             # filelist = glob.glob("*.jpg")
             # for filename in filelist:
             #     os.remove(filename)
 
             return redirect("/recipebook")
-        
-        
-        return report_error("no image received.")
+
+        return report_error("no image sent.")
+
 
 @app.route("/recipebook", methods=["GET", "POST"])
 @login_required
