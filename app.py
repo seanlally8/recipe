@@ -8,13 +8,13 @@ import requests
 from bs4 import BeautifulSoup
 from flask import Flask, redirect, render_template, request, session
 from flask_session import Session
-from sqlalchemy import and_, create_engine, insert, select
+from sqlalchemy import (Column, ForeignKey, Integer, MetaData, String, Table,
+                        and_, create_engine, insert, select)
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from buttress import (check_extension, extract_strings, image_preprocessing,
-                      login_required, parse_image, report_error)
-
-from app_model import 
+                      login_required, parse_image, report_error, remove_files, html_to_string)
+from app_model import update_tables, grab_title_id, insert_title
 
 # Initate and configure flask app
 app = Flask(__name__)
@@ -22,6 +22,47 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 app.config["SESSION_FILE_DIR"] = mkdtemp()
 Session(app)
+
+# Initiate metadata object so we can create Table objects to manipulate our data
+metadata = MetaData()
+
+# Create the table objects (corresponding recipe.db)
+ingredients = Table("ingredients", metadata,
+                    Column("title_id", Integer(), ForeignKey("titles.id")),
+                    Column("ingredient", String(), nullable=False)
+                    )
+
+instructions = Table("instructions", metadata,
+                     Column("title_id", Integer(), ForeignKey("titles.id")),
+                     Column("instruction_title", String()),
+                     Column("instruction", String(), nullable=False)
+                     )
+
+recipe_books = Table("recipe_books", metadata,
+                     Column("title_id", Integer(), ForeignKey("titles.id")),
+                     Column("user_id", Integer(), ForeignKey("users.id"))
+                     )
+
+titles = Table("titles", metadata,
+               Column("id", Integer(), primary_key=True),
+               Column("title", String(), nullable=False),
+               Column("url", String(), nullable=False, unique=True)
+               )
+
+users = Table("users", metadata,
+              Column("id", Integer(), primary_key=True),
+              Column("username", String(), nullable=False, unique=True),
+              Column("passhash", String(), nullable=False),
+              )
+
+# Initiate SQLAlchemy Engine
+engine = create_engine("sqlite:///recipe.db?check_same_thread=False", echo=True, future=True)
+
+# Create a connection object so we can execute commands/queries on the database.
+connection = engine.connect()
+
+# Create tables (if not created)
+metadata.create_all(engine)
 
 @app.route("/", methods=["GET", "POST"])
 @login_required
@@ -40,6 +81,7 @@ def index():
     # produce entry in recipe book
     if request.method == "POST":
 
+        # Check to make sure the user actually sent a url when they hit the 'Log a recipe' button
         url = request.form.get("url")
         if not url and "image" not in request.files:
             return report_error("no url sent.")
@@ -59,14 +101,21 @@ def index():
             soup = BeautifulSoup(load.text, "lxml")
 
             # Grab the recipe title from the DOM
-            recipe_title = soup.select("h1.c-recipe-details-header__title")
+            recipe_title = soup.select("h1.c-recipe-details-header__title")[0].string
 
             # Grab the ingredients list from the DOM
+            # html_to_string converts the list elements to bare strings (see buttress.py)
             ingredients_data = soup.select("ol > li")
+            print(ingredients_data)
+            html_to_string(ingredients_data)
 
-            # Grab the instructions from the DOM
+            # Grab the instruction_titles from the DOM
             instructions_title = soup.select("div.c-recipe-step__title.c-heading.c-heading--brand-7")
+            html_to_string(instructions_title)
+
+            # Grab the actual instructions from the DOM
             instructions_body = soup.select("div.col-12 > p")
+            html_to_string(instructions_body)
 
             # Check to make sure the last 3 'grabs' returned some value
             if not recipe_title or not ingredients_data or not instructions_title or not instructions_body:
@@ -79,63 +128,31 @@ def index():
             # If the url isn't in the database, update titles table, ingredients table and instructions table,
             # This condition ensures that we don't duplicate recipes in the database.
             if not len(urls):
-                stmt = insert(titles).values(title=recipe_title[0].string.strip(), url=url)
-                connection.execute(stmt)
-                connection.commit()
+                update_tables(recipe_title[0], instructions_title, instructions_body, ingredients_data, url)
+                return redirect("/recipebook")
 
-                # Grab the title id from the titles table so we can plug it in as a Foreign Key in other tables
-                stmt = select(titles.c.id).where(titles.c.url == url)
-                title_id = connection.execute(stmt).fetchall()
-                title_id = title_id[0].id
-
-                # Insert ingredients into ingredients table.
-                for ingredient in ingredients_data:
-
-                    # Stop at Salt, since everything after Salt is unnecessary information.
-                    if ingredient.string.strip().startswith("Salt"):
-                        break
-                    stmt = insert(ingredients).values(ingredient=ingredient.string.strip(), title_id=title_id)
-                    connection.execute(stmt)
-                connection.commit()
-
-                # Insert instructions into instructions table
-                for (entry, title) in zip(instructions_body, instructions_title):
-                    stmt = insert(instructions).values(instruction=entry.string.strip(),
-                                                       instruction_title=title.string.strip(),
-                                                       title_id=title_id)
-                    connection.execute(stmt)
-                connection.commit()
-
-                # Since the recipe wasn't in the database, then the user doesn't have it in their library
-                # So we add it.
-
-                # To do that, we first get the title id 
-                stmt = select(titles.c.id).where(titles.c.url == url)
-                title_id = connection.execute(stmt).fetchall()
-                title_id = title_id[0].id
-
-                stmt = insert(recipe_books).values(user_id=session["user_id"], title_id=title_id)
-                connection.execute(stmt)
-                connection.commit()
-
-            # Check to see if it's in their library 
-            stmt = select(titles.c.id).where(titles.c.url == url)
-            title_id = connection.execute(stmt).fetchall()
-            title_id = title_id[0].id
+            # If the url IS in the database, check to see if it's in the user's library
+            # i.e., a place in the db where the recipe title is associated with the user 
+            
+            # To do this, we first grab the title_id
+            title_id = grab_title_id(url)
 
             # Then, with the title_id, we attempt to select the recipe title from this user's library
             recipe_check = select(recipe_books).where(and_(recipe_books.c.title_id == title_id,
                                                         recipe_books.c.user_id == session["user_id"]))
             recipe_check = connection.execute(recipe_check).fetchall()
 
+            # If the recipe isn't in their library, we add it
+            if not recipe_check:
+                insert_title(title_id)
+                return redirect("/recipebook")
 
             # If the recipe is in the library, return an error message telling the user they already have it.
-            if len(recipe_check) > 0:
-                    return report_error("you already have that recipe in your library")
-
-        # If an image file was submitted via post, process the image with opencv, convert
+            return report_error("you already have that recipe in your library")
+                
+        # If an image file was submitted, process the image with opencv, convert
         # the image to string using Optical Character Recognition (OCR)/pytesseract, then add
-        # the recipe to the user's recipe book
+        # the recipe to the database
         elif request.files["image"]:
 
             # Fetch the image from the "post" request
@@ -165,11 +182,11 @@ def index():
             # the OCRed text from each
             recipe_strings = extract_strings(image_arrays)
 
-            # Check to make sure extract_strings returns something
-            if len(recipe_strings) == 0:
-                filelist = glob.glob("*.jpg")
-                for filename in filelist:
-                    os.remove(filename)
+            # Remove the jpeg files generated by image.save and parse_image
+            remove_files()
+
+            # Check to make sure the "extract_strings" function returns something
+            if not len(recipe_strings):
                 return report_error("Highly uncertain about that image. Resubmit material, glareless and straight.")
 
             # Split ingredients and instruction into smaller units, so we can more
@@ -178,15 +195,21 @@ def index():
                 recipe_string = recipe_strings[i]
                 instruction_list = recipe_string.split("\n\n")
 
-            for instruction in instruction_list:
-                stmt = insert(instructions).values(
+            # Update tables with recipe data gleaned via OCR
+            update_tables("Recipe Title", " ", instruction_list, "stand_in", " ")
 
-            # filelist = glob.glob("*.jpg")
-            # for filename in filelist:
-            #     os.remove(filename)
+            # Fetch the autogenerated title_id so we can add it to the user's 'library'
+            # i.e. a place in the database where the title is associated with the user
+            title_id = grab_title_id(url)
 
+            # Insert the title into their 'library'
+            insert_title(title_id)
+
+            # Send user to their 'book o recipes' (the front end of their 'library')
             return redirect("/recipebook")
 
+        # If we've made it this far then the user hit the upload button without
+        # attaching an image.
         return report_error("no image sent.")
 
 

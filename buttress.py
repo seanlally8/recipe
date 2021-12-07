@@ -1,10 +1,12 @@
 from functools import wraps
+import os
+import glob
 
 import cv2
 import numpy as np
 import pytesseract
-from pytesseract import Output
 from flask import redirect, render_template, session
+from pytesseract import Output
 
 
 def check_extension(extension):
@@ -149,7 +151,6 @@ def extract_strings(newfiles):
     # Convert each image to a string, and extract strings containing the word(s): 
     # "ingredients", "directions" and/or "instructions"
     string_list = []
-    CONF_STANDARD = 78
     conf_sum = 0
     for j in range(len(newfiles)):
         config = r"--psm 6 --oem 1"
@@ -162,13 +163,26 @@ def extract_strings(newfiles):
                 conf_sum += int(data["conf"][i])
             conf_avg = conf_sum / len(data["conf"])
             
-            if conf_avg < 78:
+            if conf_avg < 75:
+                print(conf_avg)
                 continue
             
             else:
+                print(conf_avg)
                 string_list.append(text)
+
     
     return string_list
+
+
+def html_to_string(recipe_part):
+    """
+    This function changes the html elements -- in a given list -- to strings
+    e.g. <li>List Item</li> --> "List Item"
+    """
+    for i in len(recipe_part):
+        recipe_part[i] = recipe_part[i].string
+    return recipe_part
 
 
 def login_required(f):
@@ -185,6 +199,13 @@ def login_required(f):
     return decorated_function
 
 
+def remove_files():
+    filelist = glob.glob("*.jpg")
+    for filename in filelist:
+        os.remove(filename)
+    return True
+
+
 def report_error(message):
     """
     Sends an error message (passed from app.py) to the user
@@ -192,6 +213,3 @@ def report_error(message):
 
     # TODO create a modal using bootstrap to update error.html (or maybe layout.html?) to be a bit more UX friendly
     return render_template("error.html", message=message)
-
-def update_tables():
-
