@@ -148,17 +148,10 @@ def extract_strings(newfiles):
     function then returns a list of those strings.
     '''
 
-<<<<<<< HEAD
-    # Convert each image to a string, and extract strings containing the word(s): 
-    # "ingredients", "directions" and/or "instructions"
-    CONF_STANDARD = 78
-    string_list = []
-=======
     # Declare an empty string list we can fill with the OCRed text
     string_list = []
 
     # Declare variable to hold the total sum of confidence scores in 'data' (see below)
->>>>>>> model
     conf_sum = 0
 
     # Go through each element in the list of images passed in as an argument
