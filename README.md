@@ -11,16 +11,16 @@ These are the core services upon which I hope to build a broader repertoire. Spe
 
 The following will explain in greater depth how each service works from a user's perspective. I will also dive into the nitty gritty of the python (controller) code, outlining the structure of the program and justifying some of my design choices. We'll use the following structure as our guide:
 
+2. [Logging a recipe](#logging-a-recipe)
+3. [Organizing Your library](#organizing-your-library)
+4. [Making a Shopping List](#making-a-shopping-list)
+5. [app.py](#app)
+6. [buttress.py](#buttress)
+7. [app_model.py](#app_model)
+8. [Rewriting SQL](#rewriting-sql)
+9. [Training OCR Data](#training-ocr-data)
+10. [Integrating Instacart](#integrating-instacart)
 
-1. [Logging a recipe](#logging-a-recipe)
-1. [Organizing Your library](#organizing-your-library)
-1. [Making a Shopping List](#making-a-shopping-list)
-3. [app.py](#app)
-4. [buttress.py](#buttress)
-5. [app_model.py](#app_model)
-6. [Rewriting SQL](#rewriting-sql)
-7. [Training OCR Data](#training-ocr-data)
-8. [Integrating Instacart](#integrating-instacart)
 
 
 # Logging a Recipe
