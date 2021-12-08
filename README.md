@@ -17,14 +17,14 @@ The following will, I hope, explain in greater depth how each service works from
 3. Making a Shopping List
 
 -- The Code --
-4. app.py
-5. buttress.py
-6. app_model.py
+1. app.py
+1. buttress.py
+1. app_model.py
 
 -- Looking Ahead --
-7. Rewriting SQL (decluttering code)
-8. Training OCR Data
-9. Integrating Instacart (or similar third-party app)
+1. Rewriting SQL (decluttering code)
+1. Training OCR Data
+1. Integrating Instacart (or similar third-party app)
 
 To be continued....
 
