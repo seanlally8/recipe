@@ -57,5 +57,4 @@ To Dos
 - [ ] Rewrite sql code as orm?
 - [ ] Organize OCR strings using the number (e.g. "1.", "2.") that commences each instruction
 - [ ] For OCR strings, delete everything after the exclamation point (this is specific to purple carrot recipes
-- [ ] 
 
