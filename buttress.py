@@ -1,10 +1,12 @@
 from functools import wraps
+import os
+import glob
 
 import cv2
 import numpy as np
 import pytesseract
-from pytesseract import Output
 from flask import redirect, render_template, session
+from pytesseract import Output
 
 
 def check_extension(extension):
@@ -30,15 +32,15 @@ def image_preprocessing(image):
 
     Then returns the final dilated image
 
-    this code is largely based on, "Python Tutorials for Digital Humanities," 
+    Largely based on, "Python Tutorials for Digital Humanities," 
     https://www.youtube.com/watch?v=ADV-AjAXHdc&t=1337
     https://www.youtube.com/watch?v=9FCw1xo_s0I&list=PL2VXyKi-KpYuTAZz__9KVl1jQz74bDG7i&index=8
 
-    with help from PyImageSearch
+    With help from PyImageSearch
     https://www.pyimagesearch.com/2017/02/20/text-skew-correction-opencv-python/
     https://www.pyimagesearch.com/2020/05/25/tesseract-ocr-text-localization-and-detection/ 
 
-    and Murtaza's Workshop - Robotics and AI 
+    And Murtaza's Workshop - Robotics and AI 
     https://youtu.be/6DjFscX4I_c
             
     '''
@@ -113,7 +115,7 @@ def parse_image(image):
     This function takes as input the preprocessed image and returns as output a list of 
     images containing large blocks of text from the original image
 
-    Code sources are similar to those mentioned in image_preprocessing()
+    Code sources are similar to those mentioned in image_preprocessing() docstring
     '''
 
     # Prepare image for structural analysis, so we
@@ -146,35 +148,67 @@ def extract_strings(newfiles):
     function then returns a list of those strings.
     '''
 
+<<<<<<< HEAD
     # Convert each image to a string, and extract strings containing the word(s): 
     # "ingredients", "directions" and/or "instructions"
     CONF_STANDARD = 78
     string_list = []
+=======
+    # Declare an empty string list we can fill with the OCRed text
+    string_list = []
+
+    # Declare variable to hold the total sum of confidence scores in 'data' (see below)
+>>>>>>> model
     conf_sum = 0
+
+    # Go through each element in the list of images passed in as an argument
     for j in range(len(newfiles)):
+
+        # Flags passed to tesseract
+        # --psm 6 --> Assume a single uniform block of text.
+        # --oem 1 --> Neural nets LSTM engine only.
         config = r"--psm 6 --oem 1"
+
+        # Convert image to string and extract dictionary of pertinent data so we can access the confidence score
+        # Check out Murtaza's Workshop - Robotics and AI (https://youtu.be/6DjFscX4I_c) for an brief explanation of
+        # confidence scores
         text = pytesseract.image_to_string(newfiles[j], config=config)
         data = pytesseract.image_to_data(newfiles[j], config=config, output_type=Output.DICT)
+
+        # Check for keywords that tell us this is relevant text
         if "ingredients" in text.lower() or "directions" in text.lower() or "dueelins" \
             in text.lower() or "salt and pepper" in text.lower():
 
+            # Calculate the average confidence score for this OCR output
             for i in range(len(data["conf"])):
                 conf_sum += int(data["conf"][i])
             conf_avg = conf_sum / len(data["conf"])
             
-            if conf_avg < 78:
+            # Check to make sure the average confidence score meets the minimum requirement
+            if conf_avg < 75:
                 continue
             
+            # If it meets requirement, add it to our list of strings.
             else:
                 string_list.append(text)
-    
+ 
     return string_list
+
+
+def html_to_string(recipe_part):
+    """
+    This function changes the html elements -- in a given list -- to clean strings
+    e.g. <li>List Item</li> --> "List Item"
+    """
+    for i in range(len(recipe_part)):
+        recipe_part[i] = recipe_part[i].string.strip()
+    return recipe_part
 
 
 def login_required(f):
     """
-    this decorator function is provided by flask. it checks to see if the user is signed in.
-    if not, the user is sent to the login page.
+    This decorator function is provided by flask. It checks to see if the user is signed in.
+    If not, the user is sent to the login page.
     """
 
     @wraps(f)
@@ -185,6 +219,17 @@ def login_required(f):
     return decorated_function
 
 
+def remove_files():
+    """
+    This function removes the jpeg files generated in by 
+    parse_image() (above) and image.save (in app.py)
+    """
+    filelist = glob.glob("*.jpg")
+    for filename in filelist:
+        os.remove(filename)
+    return True
+
+
 def report_error(message):
     """
     Sends an error message (passed from app.py) to the user
@@ -192,6 +237,3 @@ def report_error(message):
 
     # TODO create a modal using bootstrap to update error.html (or maybe layout.html?) to be a bit more UX friendly
     return render_template("error.html", message=message)
-
-def update_tables():
-
