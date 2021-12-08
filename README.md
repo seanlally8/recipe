@@ -1,7 +1,7 @@
 # recipe
 (This Readme is under construction)
 
-Recipe is a web app for making shopping lists and collecting recipes. It provides 3 basic services:
+Developed as the final project for <a href="https://cs50.harvard.edu/x/2021/">Harvard's CS50</a>, recipe is a web app for making shopping lists and collecting recipes. It provides 3 basic services:
 
 - Converts html and scanned pages to virtually editable scrapbook recipes
 - Allows user to organize recipes using tags
@@ -9,24 +9,48 @@ Recipe is a web app for making shopping lists and collecting recipes. It provide
 
 These are the core services upon which I hope to build a broader repertoire. Specifically, I would like to allow the user to submit the shopping list to instacart with the click of a button.
 
-The following will, I hope, explain in greater depth how each service works from a user's perspective. I will also dive into the nitty gritty of the python (controller) code, outlining the structure of the program and justifying some of my design choices. We'll use the following structure as our guide:
+The following will explain in greater depth how each service works from a user's perspective. I will also dive into the nitty gritty of the python (controller) code, outlining the structure of the program and justifying some of my design choices. We'll use the following structure as our guide:
 
 
-1. Logging a recipe
-1. Organizing Your library
-1. Making a Shopping List
-3. app.py
-4. buttress.py
-5. app_model.py
-6. Rewriting SQL (decluttering code)
-7. Training OCR Data
-8. Integrating Instacart (or similar third-party app)
+1. [Logging a recipe](#logging-a-recipe)
+1. [Organizing Your library](#organizing-your-library)
+1. [Making a Shopping List](#making-a-shopping-list)
+3. [app.py](#app)
+4. [buttress.py](#buttress)
+5. [app_model.py](#app_model)
+6. [Rewriting SQL](#rewriting-sql)
+7. [Training OCR Data](#training-ocr-data)
+8. [Integrating Instacart](#integrating-instacart)
 
-To be continued....
 
----
+# Logging a Recipe
 
-This app is being developed as the final project for <a href="https://cs50.harvard.edu/x/2021/">Harvard's CS50</a>, taught by David Malan. It is currently in its early phases, but I will be updating this readme as I get closer to completion.
+
+# Organizing Your library
+
+
+# Making a Shopping List
+
+
+# App
+
+
+# Buttress
+
+
+# App_Model
+
+
+
+# Rewriting SQL
+
+
+# Training OCR Data
+
+
+# Integrating Instacart
+
+
 
 To Dos
 - [ ] buttress.py line 25 create a modal using bootstrap to update error.html (or maybe layout.html?) to be a bit more UX friendly
