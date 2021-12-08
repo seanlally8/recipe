@@ -29,7 +29,7 @@ recipe_books = Table("recipe_books", metadata,
 titles = Table("titles", metadata,
                Column("id", Integer(), primary_key=True),
                Column("title", String(), nullable=False),
-               Column("url", String(), nullable=False, unique=True)
+               Column("url", String())
                )
 
 users = Table("users", metadata,
@@ -63,6 +63,7 @@ def update_tables(title, instructions_body, ingredients_list, url):
 
     # Insert ingredients into ingredients table.
     for ingredient in ingredients_list:
+        print(ingredient)
 
         # Stop at extraneous instruction
         if ingredient.lower().startswith("for full"):
@@ -73,9 +74,11 @@ def update_tables(title, instructions_body, ingredients_list, url):
 
     # Insert instructions into instructions table
     for entry in instructions_body:
+        print(entry)
+        print()
 
         # If the instruction is short, then skip it
-        if len(entry) < 10:
+        if len(entry) < 15:
             continue
 
         # Otherwise contine entering the entries (with title_ids) into the database 

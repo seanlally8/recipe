@@ -19,6 +19,7 @@ def check_extension(extension):
     else:
         return True
 
+
 def image_preprocessing(image):
     '''
     This function prepares the image for OCR with the following steps:
@@ -73,17 +74,14 @@ def image_preprocessing(image):
         return image
 
     contours, hierarchy = cv2.findContours(im_bw, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    for c in contours:
-        x, y, w, h = cv2.boundingRect(c)
-        if h > 3000:
-            rotated = rotate_image(im_bw, c)
+    contours = sorted(contours, key=lambda x: cv2.contourArea(x))
+    rotated = rotate_image(im_bw, contours[-1])
 
     # Crop the image
     contours, hierarchy = cv2.findContours(rotated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    for c in contours:
-        x, y, w, h = cv2.boundingRect(c)
-        if h > 3000:
-            cropped = rotated[y: y + h, x: x + w]
+    contours = sorted(contours, key=lambda x: cv2.contourArea(x))
+    x, y, w, h = cv2.boundingRect(contours[-1])
+    cropped = rotated[y: y + h, x: x + w]
 
     # Remove noise from the image 
     def noise_removal(image):
@@ -158,19 +156,20 @@ def extract_strings(newfiles):
     for j in range(len(newfiles)):
 
         # Flags passed to tesseract
-        # --psm 6 --> Assume a single uniform block of text.
+        # --psm 4 --> Assume a single column of text of variable sizes.
         # --oem 1 --> Neural nets LSTM engine only.
-        config = r"--psm 6 --oem 1"
+        config = r"--psm 11 --oem 1"
 
-        # Convert image to string and extract dictionary of pertinent data so we can access the confidence score
+        # Convert image to string and extract dictionary of pertinent data (in 'data') so we can access the confidence score
         # Check out Murtaza's Workshop - Robotics and AI (https://youtu.be/6DjFscX4I_c) for an brief explanation of
         # confidence scores
         text = pytesseract.image_to_string(newfiles[j], config=config)
         data = pytesseract.image_to_data(newfiles[j], config=config, output_type=Output.DICT)
 
         # Check for keywords that tell us this is relevant text
-        if "ingredients" in text.lower() or "directions" in text.lower() or "dueelins" \
-            in text.lower() or "salt and pepper" in text.lower():
+        # TODO use different --psm for different types of input (ingredient's list vs. instructions)
+        if "ingredients" in text.lower() or "prepare" in text.lower() or "medium" \
+            in text.lower() or "salt" in text.lower():
 
             # Calculate the average confidence score for this OCR output
             for i in range(len(data["conf"])):
@@ -178,11 +177,18 @@ def extract_strings(newfiles):
             conf_avg = conf_sum / len(data["conf"])
             
             # Check to make sure the average confidence score meets the minimum requirement
-            if conf_avg < 75:
+            if conf_avg < 50:
+                print(text)
+                print(conf_avg)
+                print("^")
                 continue
             
             # If it meets requirement, add it to our list of strings.
             else:
+                print(text)
+                print(conf_avg)
+                print("^^^")
+                conf_sum = 0
                 string_list.append(text)
  
     return string_list
