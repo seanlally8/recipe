@@ -1,6 +1,6 @@
-from functools import wraps
-import os
 import glob
+import os
+from functools import wraps
 
 import cv2
 import numpy as np
@@ -10,9 +10,9 @@ from pytesseract import Output
 
 
 def check_extension(extension):
-    '''
+    """
     This function checks to make sure the file format is acceptable
-    '''
+    """
     # https://flask.palletsprojects.com/en/2.0.x/patterns/fileuploads/
     if extension != "jpg" or extension != "png":
         return report_error("not a valid file type - only jpg and png accepted")
@@ -21,7 +21,7 @@ def check_extension(extension):
 
 
 def image_preprocessing(image):
-    '''
+    """
     This function prepares the image for OCR with the following steps:
 
     1. grayscale
@@ -44,7 +44,7 @@ def image_preprocessing(image):
     And Murtaza's Workshop - Robotics and AI 
     https://youtu.be/6DjFscX4I_c
             
-    '''
+    """
             
     # Grayscale the image in preparation for binarization 
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -109,12 +109,12 @@ def image_preprocessing(image):
 
 
 def parse_image(image):
-    '''
+    """
     This function takes as input the preprocessed image and returns as output a list of 
     images containing large blocks of text from the original image
 
     Code sources are similar to those mentioned in image_preprocessing() docstring
-    '''
+    """
 
     # Prepare image for structural analysis, so we
     # can separate out chunks of text
@@ -141,10 +141,10 @@ def parse_image(image):
 
 
 def extract_strings(newfiles):
-    '''
+    """
     This function takes a list of image arrays, then converts those images to strings. The
     function then returns a list of those strings.
-    '''
+    """
 
     # Declare an empty string list we can fill with the OCRed text
     string_list = []
@@ -199,6 +199,7 @@ def html_to_string(recipe_part):
     This function changes the html elements -- in a given list -- to clean strings
     e.g. <li>List Item</li> --> "List Item"
     """
+
     for i in range(len(recipe_part)):
         recipe_part[i] = recipe_part[i].string.strip()
     return recipe_part
@@ -223,6 +224,7 @@ def remove_files():
     This function removes the jpeg files generated in by 
     parse_image() (above) and image.save (in app.py)
     """
+
     filelist = glob.glob("*.jpg")
     for filename in filelist:
         os.remove(filename)

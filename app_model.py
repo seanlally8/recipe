@@ -1,10 +1,11 @@
 # This module is devoted to database queries (insertions, selections, etc.).
 # TODO rewrite all sql code using ORM to reduce the clutter of MetaData
 
+from itertools import zip_longest
+
+from flask import session
 from sqlalchemy import (Column, ForeignKey, Integer, MetaData, String, Table,
                         and_, create_engine, insert, select)
-from flask import session
-from itertools import zip_longest
 
 # Initiate metadata object so we can create Table objects to manipulate our data
 metadata = MetaData()

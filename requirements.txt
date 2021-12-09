@@ -8,5 +8,5 @@ gunicorn
 pytesseract
 opencv-python
 numpy
-random_word
+random-word
 pyyaml

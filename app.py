@@ -1,23 +1,20 @@
-from tempfile import mkdtemp
 import re
+from tempfile import mkdtemp
 
 import cv2
 import requests
 from bs4 import BeautifulSoup
 from flask import Flask, redirect, render_template, request, session
 from flask_session import Session
-
-# DELETE WHEN DONE WITH THIS MODULE
-from random_word import RandomWords 
-# DELETE WHEN DONE //
-
+from random_word import RandomWords
 from sqlalchemy import (Column, ForeignKey, Integer, MetaData, String, Table,
                         and_, create_engine, insert, select)
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from buttress import (check_extension, extract_strings, image_preprocessing,
-                      login_required, parse_image, report_error, remove_files, html_to_string)
-from app_model import update_tables, grab_title_id, insert_title
+from app_model import grab_title_id, insert_title, update_tables
+from buttress import (check_extension, extract_strings, html_to_string,
+                      image_preprocessing, login_required, parse_image,
+                      remove_files, report_error)
 
 # Initate and configure flask app
 app = Flask(__name__)
@@ -228,11 +225,11 @@ def index():
 @app.route("/recipebook", methods=["GET", "POST"])
 @login_required
 def recipebook():
-    '''
+    """
     Recipe book provides the user with a select menu containing all their recipes.
     When they select one and press the "let's cook!" button,
     a screen appears displaying the desired recipe.
-    '''
+    """
 
     # If user arrives via GET (that is, if they've clicked on "Book o' Recipes")
     # display a select menu with all their recipes
