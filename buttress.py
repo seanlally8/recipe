@@ -149,49 +149,60 @@ def extract_strings(newfiles):
     # Declare an empty string list we can fill with the OCRed text
     string_list = []
 
-    # Declare variable to hold the total sum of confidence scores in 'data' (see below)
-    conf_sum = 0
 
     # Go through each element in the list of images passed in as an argument
     for j in range(len(newfiles)):
 
         # Flags passed to tesseract
+        # --psm 11 --> Assume sparse text
         # --psm 4 --> Assume a single column of text of variable sizes.
         # --oem 1 --> Neural nets LSTM engine only.
-        config = r"--psm 11 --oem 1"
+        config_init = r"--psm 11 --oem 1"
+        config_second = r"--psm 6 --oem 1"
 
-        # Convert image to string and extract dictionary of pertinent data (in 'data') so we can access the confidence score
-        # Check out Murtaza's Workshop - Robotics and AI (https://youtu.be/6DjFscX4I_c) for an brief explanation of
-        # confidence scores
-        text = pytesseract.image_to_string(newfiles[j], config=config)
-        data = pytesseract.image_to_data(newfiles[j], config=config, output_type=Output.DICT)
+        text = pytesseract.image_to_string(newfiles[j], config=config_init)
+        data = pytesseract.image_to_data(newfiles[j], config=config_init, output_type=Output.DICT)
 
-        # Check for keywords that tell us this is relevant text
-        # TODO use different --psm for different types of input (ingredient's list vs. instructions)
-        if "ingredients" in text.lower() or "prepare" in text.lower() or "medium" \
-            in text.lower() or "salt" in text.lower():
-
-            # Calculate the average confidence score for this OCR output
-            for i in range(len(data["conf"])):
-                conf_sum += int(data["conf"][i])
-            conf_avg = conf_sum / len(data["conf"])
-            
-            # Check to make sure the average confidence score meets the minimum requirement
-            if conf_avg < 50:
-                print(text)
-                print(conf_avg)
-                print("^")
-                continue
-            
-            # If it meets requirement, add it to our list of strings.
-            else:
-                print(text)
-                print(conf_avg)
-                print("^^^")
-                conf_sum = 0
+        if "ingredients" in text.lower() and "cup" in text.lower():
+            if check_conf_score(data, 0):
                 string_list.append(text)
- 
+            
+        elif "prepare" in text.lower() or "preheat" in text.lower() or "assemble" in text.lower():
+
+            text = pytesseract.image_to_string(newfiles[j], config=config_second)
+
+            if check_conf_score(data, 1):
+                string_list.append(text)
+
     return string_list
+
+
+def check_conf_score(data, x):
+    """
+    This function takes as input the dictionary of data provided by pytesseract.image_to_data()
+    and checks to see if the average confidence score meets the pre-established standard.
+    """
+    if x < 1:
+        print("INGREDIENTS")
+    else:
+        print("INSTRUCTIONS")
+
+    # Declare variable to hold the total sum of confidence scores in 'data' (see below)
+    conf_sum = 0
+
+    # Calculate the average confidence score for this OCR output
+    for i in range(len(data["conf"])):
+        conf_sum += int(data["conf"][i])
+    conf_avg = conf_sum / len(data["conf"])
+
+    # Check to make sure the average confidence score meets the minimum requirement
+    if conf_avg < 50:
+        print(f"FAIL: {conf_avg}")
+        return False
+
+    else:
+        print(f"SUCCESS: {conf_avg}")
+        return True
 
 
 def html_to_string(recipe_part):
