@@ -82,6 +82,7 @@ def image_preprocessing(image):
     contours = sorted(contours, key=lambda x: cv2.contourArea(x))
     x, y, w, h = cv2.boundingRect(contours[-1])
     cropped = rotated[y: y + h, x: x + w]
+    cv2.imwrite("cropped.jpg", cropped)
 
     # Remove noise from the image 
     def noise_removal(image):
@@ -125,13 +126,21 @@ def parse_image(image):
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 50))
     over_dilate = cv2.dilate(invert, kernel, iterations=3)
 
-    # Identify the larger blocks of text (this is the structural analysis part), 
-    # crop out those blocks, and save them to disk -- each with their own file 
+    # Identify contours on the page, preparing to extract images of the appropriate size
     image_arrays = []
     contours, hierarchy = cv2.findContours(over_dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # To account for images of varying sizes, we can use the ratio, partial_image_width:full_image_width.
+    # Thus, we identify the dimensions of the largest box (the full image)
+    contours = sorted(contours, key=lambda x: cv2.contourArea(x))
+    fullx, fully, fullw, fullh = cv2.boundingRect(contours[-1])
+
+
+    # Finally, find the larger blocks of text (this is the structural analysis part), 
+    # crop out those blocks, and save them to disk -- each with their own file (roi#.jpg)
     for i, c in enumerate(contours):
         x, y, w, h = cv2.boundingRect(c)
-        if h > 200:
+        if (w / fullw) > .5:
             roi_image = image[y: y + h, x: x + w]
             filename = f"roi{i}.jpg"
             cv2.imwrite(filename, roi_image) 
@@ -153,21 +162,25 @@ def extract_strings(newfiles):
     # Go through each element in the list of images passed in as an argument
     for j in range(len(newfiles)):
 
-        # Flags passed to tesseract
+        # Flags passed to tesseract:
         # --psm 11 --> Assume sparse text
-        # --psm 4 --> Assume a single column of text of variable sizes.
+        # --psm 6 --> Assume a single uniform block of text.
         # --oem 1 --> Neural nets LSTM engine only.
-        config_init = r"--psm 11 --oem 1"
-        config_second = r"--psm 6 --oem 1"
+        # The flag, '-l eng_layer,' refers to finetuned traineddata obtained using Shreeshrii's tess4training
+        # scripts (https://github.com/Shreeshrii/tess4training), which are based on Ray Smith's tutorials
+        # (https://tesseract-ocr.github.io/tessdoc/tess4/TrainingTesseract-4.00.html).
+        # The finetuned data allows 'recipe' to accurately recognize fractions.
+        config_init = r"--psm 11 --oem 1 -l eng_layer"
+        config_second = r"--psm 6 --oem 1 -l eng_layer"
 
         text = pytesseract.image_to_string(newfiles[j], config=config_init)
         data = pytesseract.image_to_data(newfiles[j], config=config_init, output_type=Output.DICT)
 
-        if "ingredients" in text.lower() and "cup" in text.lower():
+        if "\u00BC" in text.lower() or "\u00BD" in text.lower():
             if check_conf_score(data, 0):
                 string_list.append(text)
             
-        elif "prepare" in text.lower() or "preheat" in text.lower() or "assemble" in text.lower():
+        elif "prepare" in text.lower() or "preheat" in text.lower() or "assemble" in text.lower() or "bowls" in text.lower():
 
             text = pytesseract.image_to_string(newfiles[j], config=config_second)
 
