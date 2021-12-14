@@ -69,7 +69,7 @@ metadata.create_all(engine)
 def index():
     """
     The user can enter a url containing a recipe in order to
-    add it to their 'Book o' Recipes'
+    add it to their 'Library'
     """
 
     # If user arrives via GET, load the homepage
@@ -229,6 +229,58 @@ def index():
         return report_error("no image sent.")
 
 
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """
+    Route via which user will login to their Recipe account
+    """
+
+    # Clear the session, so a new session can be created
+    session.clear()
+
+    # If user arrives via GET, simply load the page containing the login forms.
+    if request.method == "GET":
+        return render_template("login.html")
+
+    # If they've arrived via POST, then they've submitted their
+    # username and password, which this conditional will process
+    elif request.method == "POST":
+
+        # Store username and password in variables for readability
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        # Check to see whether they've given a username and password
+        if not username:
+            return report_error("please provide a username")
+        if not password:
+            return report_error("please provide a password")
+
+        # Check to see if the username/password pair are in the users table
+        sel = select(users).where(and_(users.c.username == username))
+        user_account = connection.execute(sel).fetchall()
+
+        # If they're not in the table, tell the user as much
+        if len(user_account) != 1 or not check_password_hash(user_account[0]["passhash"], password):
+            return report_error("username and/or password does not exist")
+        elif len(user_account) == 1:
+            session["user_id"] = user_account[0].id
+
+            return redirect("/recipebook")
+
+
+@app.route("/logout")
+def logout():
+    """
+    Log the user out and send them to the login page
+    """
+
+    session.clear()
+
+    return redirect("/")
+
+
 @app.route("/recipebook", methods=["GET", "POST"])
 @login_required
 def recipebook():
@@ -238,7 +290,7 @@ def recipebook():
     a screen appears displaying the desired recipe.
     """
 
-    # If user arrives via GET (that is, if they've clicked on "Book o' Recipes")
+    # If user arrives via GET (that is, if they've clicked on "Library")
     # display a select menu with all their recipes
     if request.method == "GET":
 
@@ -282,56 +334,6 @@ def recipebook():
                                instructions=recipe_instruction,
                                recipe_url=recipe_url)
 
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    """
-    Route via which user will login to their Recipe account
-    """
-
-    # Clear the session, so a new session can be created
-    session.clear()
-
-    # If user arrives via GET, simply load the page containing the login forms.
-    if request.method == "GET":
-        return render_template("login.html")
-
-    # If they've arrived via POST, then they've submitted their
-    # username and password, which this conditional will process
-    elif request.method == "POST":
-
-        # Store username and password in variables for readability
-        username = request.form.get("username")
-        password = request.form.get("password")
-
-        # Check to see whether they've given a username and password
-        if not username:
-            return report_error("please provide a username")
-        if not password:
-            return report_error("please provide a password")
-
-        # Check to see if the username/password pair are in the users table
-        sel = select(users).where(and_(users.c.username == username))
-        user_account = connection.execute(sel).fetchall()
-
-        # If they're not in the table, tell the user as much
-        if len(user_account) != 1 or not check_password_hash(user_account[0]["passhash"], password):
-            return report_error("username and/or password does not exist")
-        elif len(user_account) == 1:
-            session["user_id"] = user_account[0].id
-
-            return redirect("/")
-
-
-@app.route("/logout")
-def logout():
-    """
-    Log the user out and send them to the login page
-    """
-
-    session.clear()
-
-    return redirect("/")
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -392,3 +394,12 @@ def register():
         session["user_id"] = user_id[0].id
 
         return redirect("/")
+
+
+@app.route("/shoppinglist")
+def shoppinglist():
+    """
+    Where the user can make a shopping list
+    """
+
+    return render_template("shoppinglist.html")

@@ -1,30 +1,44 @@
 {% extends "layout.html" %}
 
-{% block title %}Home{% endblock%}
+{% block title %}Log a Recipe{% endblock%}
 
 {% block main %}
 
 	<!-- Allow user to fetch a recipe by URL -->
-	<div class="my-5 pt-5">
-		<h1>RECIPE</h1>
-		<br>
-		<form action="/" method="post" >
-			<div class="form-group p-2">
-				<input type="text" autofocus class="form-control" name="url" placeholder="Recipe URL">
-			</div>
+	<div class="row my-5 pt-5">
+		<div class="col-md">
+			<h1>From a website</h1>
 			<br>
-			<div class="p-2">
-				<input type="submit" class="btn btn-dark" value="Log Your Recipe!">
-			</div>
-		</form>
-
-		<!-- Offer the user the option to upload a photo of a recipe (on desktop) or take a photo (on mobile) -->
-		<form action="/" method="post" enctype="multipart/form-data">
-			<div class="p-2">
-				<input type="file" accept="image/*" capture="environment" id="file-upload" multiple name="image">
-				<input type="submit" value="Upload">
-			</div>
-		</form>
+			<form action="/" method="post" >
+				<div class="form-group p-2">
+					<input type="text" autofocus class="form-control" name="url" placeholder="Recipe URL">
+				</div>
+				<br>
+				<div class="p-2">
+					<input type="submit" class="btn btn-dark" value="Log Your Recipe!">
+				</div>
+			</form>
+		</div>
+	<!-- Offer the user the option to upload a photo of a recipe (on desktop) or take a photo (on mobile) -->
+		<div class="col-md">
+			<h1>From a book</h1>
+			<form action="/" method="post" enctype="multipart/form-data">
+				<div class="pt-5">
+					<input type="text" class="form-control" id="recipetitle" placeholder="What's the name of your recipe?" size="40">
+				</div>
+				<div class="p-5">
+					<input type="button" class="btn btn-dark" id="nextbutton" value="Next">
+				</div>
+			</form>
+		</div>
 	</div>
+
+					<!-- <label for="file-upload" class="btn btn-dark">Browse</label>
+					<input type="file"  accept="image/*" capture="environment" id="file-upload" multiple name="image" style="display: none">
+					<input type="submit" class="btn btn-dark" value="Upload"> -->
+			<script>
+
+
+			</script>
 
 {% endblock %}
