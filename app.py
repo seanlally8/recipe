@@ -14,7 +14,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from app_model import grab_title_id, insert_title, update_tables
 from buttress import (check_extension, extract_strings, html_to_string,
                       image_preprocessing, login_required, parse_image,
-                      remove_files, report_error)
+                      report_error)
 
 # Initate and configure flask app
 app = Flask(__name__)
@@ -128,7 +128,7 @@ def index():
                 return redirect("/recipebook")
             # If the url IS in the database, check to see if it's in the user's library
             # i.e., a place in the db where the recipe title is associated with the user 
-            
+
             # To do this, we first grab the title_id
             title_id = grab_title_id(recipe_title)
 
@@ -144,7 +144,7 @@ def index():
 
             # If the recipe is in the library, return an error message telling the user they already have it.
             return report_error("you already have that recipe in your library")
-                
+
         # If an image file was submitted, process the image with opencv, convert
         # the image to string using Optical Character Recognition (OCR)/pytesseract, then add
         # the recipe to the database

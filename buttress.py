@@ -33,19 +33,18 @@ def image_preprocessing(image):
 
     Then returns the final dilated image
 
-    Largely based on, "Python Tutorials for Digital Humanities," 
+    Largely based on, "Python Tutorials for Digital Humanities,"
     https://www.youtube.com/watch?v=ADV-AjAXHdc&t=1337
     https://www.youtube.com/watch?v=9FCw1xo_s0I&list=PL2VXyKi-KpYuTAZz__9KVl1jQz74bDG7i&index=8
 
     With help from PyImageSearch
     https://www.pyimagesearch.com/2017/02/20/text-skew-correction-opencv-python/
-    https://www.pyimagesearch.com/2020/05/25/tesseract-ocr-text-localization-and-detection/ 
+    https://www.pyimagesearch.com/2020/05/25/tesseract-ocr-text-localization-and-detection/
 
-    And Murtaza's Workshop - Robotics and AI 
+    And Murtaza's Workshop - Robotics and AI
     https://youtu.be/6DjFscX4I_c
-            
     """
-            
+
     # Grayscale the image in preparation for binarization 
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
