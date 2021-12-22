@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 
+
 {% block title %}Log a Recipe{% endblock%}
 
 {% block main %}
@@ -19,8 +20,9 @@
 				</div>
 			</form>
 		</div>
+
 	<!-- Offer the user the option to upload a photo of a recipe (on desktop) or take a photo (on mobile) -->
-		<div class="col-md">
+		<div class="col-md" id="file_upload">
 			<h1>From a book</h1>
 			<form action="/" method="post" enctype="multipart/form-data">
 				<div class="pt-5">

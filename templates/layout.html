@@ -28,6 +28,28 @@ This page is extended with flask jinja by each of the other html pages
 		<!-- Local stylesheet -->
 		<link href="/static/styles.css" rel="stylesheet">
 
+
+		<script>
+
+			document.addEventListener('DOMContentLoaded', () => {
+				let title  =  document.querySelector('#recipetitle').value;
+				let mainform = document.querySelector('#file_upload');
+				document.querySelector('#nextbutton').onclick = (button) => {
+
+					mainform.innerHTML =  '<label for="file-upload" class="btn btn-dark">Browse</label> \
+                    <input type="file"  accept="image/*" capture="environment" id="file-upload" multiple name="image" style="display: none"> \
+                    <input type="submit" class="btn btn-dark" value="Upload">';
+
+				};
+			
+				let file = [];
+				// Now we need to ask user if they'd like to upload another
+				
+
+			});
+
+		</script>
+
 		<title>Recipe: {% block title %}{% endblock %}</title>
 
 	</head>
