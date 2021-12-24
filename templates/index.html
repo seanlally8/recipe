@@ -22,25 +22,17 @@
 		</div>
 
 	<!-- Offer the user the option to upload a photo of a recipe (on desktop) or take a photo (on mobile) -->
-		<div class="col-md" id="file_upload">
+		<div class="col-md" id="scan-form">
 			<h1>From a book</h1>
 			<form action="/" method="post" enctype="multipart/form-data">
-				<div class="pt-5">
-					<input type="text" class="form-control" id="recipetitle" placeholder="What's the name of your recipe?" size="40">
+				<div class="form-group p-3">
+					<input type="text" class="form-control" id="recipetitle" placeholder="Recipe Title">
 				</div>
-				<div class="p-5">
+				<div class="p-4">
 					<input type="button" class="btn btn-dark" id="nextbutton" value="Next">
 				</div>
 			</form>
 		</div>
 	</div>
-
-					<!-- <label for="file-upload" class="btn btn-dark">Browse</label>
-					<input type="file"  accept="image/*" capture="environment" id="file-upload" multiple name="image" style="display: none">
-					<input type="submit" class="btn btn-dark" value="Upload"> -->
-			<script>
-
-
-			</script>
 
 {% endblock %}
