@@ -169,8 +169,8 @@ def extract_strings(newfiles):
         # scripts (https://github.com/Shreeshrii/tess4training), which are based on Ray Smith's tutorials
         # (https://tesseract-ocr.github.io/tessdoc/tess4/TrainingTesseract-4.00.html).
         # The finetuned data allows 'recipe' to accurately recognize fractions.
-        config_init = r"--psm 11 --oem 1 -l eng_layer"
-        config_second = r"--psm 6 --oem 1 -l eng_layer"
+        config_init = r"--psm 11 --oem 1"
+        config_second = r"--psm 6 --oem 1"
 
         text = pytesseract.image_to_string(newfiles[j], config=config_init)
         data = pytesseract.image_to_data(newfiles[j], config=config_init, output_type=Output.DICT)
@@ -204,7 +204,7 @@ def check_conf_score(data, x):
 
     # Calculate the average confidence score for this OCR output
     for i in range(len(data["conf"])):
-        conf_sum += int(data["conf"][i])
+        conf_sum += float(data["conf"][i])
     conf_avg = conf_sum / len(data["conf"])
 
     # Check to make sure the average confidence score meets the minimum requirement
