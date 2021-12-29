@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		// Here's where we actually update the html
 		document.querySelector('#scan-form').innerHTML =  '<label for="file-upload" class="btn btn-dark">Browse</label> \
 		<input type="file"  accept="image/*" id="file-upload" multiple name="image" style="display: none"> \
-		<button class="btn btn-dark" id="upload-button">Upload</button>';
+		<button type="submit" class="btn btn-dark" id="upload-button">Upload</button>';
 
 		// We'll use this to access the files selected by user
 		let fileUpload = document.querySelector('#file-upload');
@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			for (let i = 0; i < fileList.length; i++) {
 				console.log(fileList[i]);
 			}
+			console.log(typeof fileList);
 
 			// We'll need to listen for the upload button being clicked 
 			let fileSubmit = document.querySelector('#upload-button')
@@ -50,24 +51,18 @@ document.addEventListener('DOMContentLoaded', () => {
 				// Add items to FormData object: the recipe's title and the images
 				formData.append('title', title);
 
-				for (let i = 0; i < fileList.length; i++) {
-					formData.append(`photos_${i}`, fileList[i]);
+				for (const file of fileList) {
+					formData.append('image', file);
+				}
+
+				for (var entry of formData) {
+					console.log(entry[0], entry[1])
 				}
 
 				fetch('/', {
 					method: 'POST',
 					body: formData
-				})
-
-				.then(response => response.json())
-
-				.then(result => {
-					console.log('Success:', result);
-				})
-
-				.catch(error => {
-					console.error('Error:', error);
-				});
+				}).catch(console.error);
 			};
 		};
 	};
