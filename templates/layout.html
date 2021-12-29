@@ -28,8 +28,7 @@ This page is extended with flask jinja by each of the other html pages
 		<!-- Local stylesheet -->
 		<link href="/static/styles.css" rel="stylesheet">
 
-
-		<script src="/static/interactive.js"></script>
+		{% block script %}{% endblock %}
 
 		<title>Recipe: {% block title %}{% endblock %}</title>
 

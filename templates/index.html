@@ -1,7 +1,8 @@
 {% extends "layout.html" %}
 
+{% block script %}<script src="/static/interactive.js"></script>{% endblock %}
 
-{% block title %}Log a Recipe{% endblock%}
+{% block title %}Log a Recipe{% endblock %}
 
 {% block main %}
 
@@ -21,15 +22,15 @@
 			</form>
 		</div>
 
-	<!-- Offer the user the option to upload a photo of a recipe (on desktop) or take a photo (on mobile) -->
+		<!-- Offer the user the option to upload a photo of a recipe (on desktop) or take a photo (on mobile) -->
 		<div class="col-md" id="scan-form">
 			<h1>From a book</h1>
 			<form action="/" method="post" enctype="multipart/form-data">
 				<div class="form-group p-3">
-					<input type="text" class="form-control" id="recipetitle" placeholder="Recipe Title">
+					<input type="text" class="form-control" id="recipe-title" placeholder="Recipe Title">
 				</div>
 				<div class="p-4">
-					<input type="button" class="btn btn-dark" id="nextbutton" value="Next">
+					<input type="button" class="btn btn-dark" id="next-button" value="Next">
 				</div>
 			</form>
 		</div>

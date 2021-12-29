@@ -10,6 +10,7 @@ from random_word import RandomWords
 from sqlalchemy import (Column, ForeignKey, Integer, MetaData, String, Table,
                         and_, create_engine, insert, select)
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 from app_model import grab_title_id, insert_title, update_tables
 from buttress import (check_extension, extract_strings, html_to_string,
@@ -88,7 +89,7 @@ def index():
 
         # if url was entered, parse the html of the given page and update database to include
         # recipe data
-        if request.form.get("url"):
+        if url:
 
             # Check for proper url format. This section might benefit from some regular expression magic.
             if not url.startswith("http"):
@@ -148,7 +149,9 @@ def index():
         # If an image file was submitted, process the image with opencv, convert
         # the image to string using Optical Character Recognition (OCR)/pytesseract, then add
         # the recipe to the database
-        elif request.files["image"]:
+        elif request.files:
+
+            print("you made it")
 
             # Fetch the image from the "post" request
             image = request.files["image"]
@@ -159,18 +162,19 @@ def index():
             # Check for valid extension (.jpg or .png)
             check_extension(ext)
 
+            # Create secure filename in case of attack
+            filename = secure_filename(image.filename)
+
             # Save the image to filesystem
-            img = image.save(f"tmpimage.{ext}")
+            image.save(filename)
 
             # Read the file into memory so we can manipulate the image with code
-            filename = f"tmpimage.{ext}"
             img = cv2.imread(filename)
 
             # Prepare the image for OCR text recognition
             processed_image = image_preprocessing(img)
 
-            # Create a list of image arrays, each containing a separate chunk of text
-            # from the original image
+            # Extract sections of image with relevant text 
             image_arrays = parse_image(processed_image)
 
             # Produce a list of strings containing
@@ -185,7 +189,7 @@ def index():
                 return report_error("Highly uncertain about that image. Resubmit material, glareless and straight.")
 
             # Split ingredients and instruction into smaller units, so we can more
-            # easily manipulate the data on the front-end
+            # easily manipulate the data on the front-end -- specifically for making shopping lists
             ingredients_list = []
             list_of_ingredients = []
             for recipe_str in recipe_strings:
@@ -227,7 +231,6 @@ def index():
         # If we've made it this far then the user hit the upload button without
         # attaching an image.
         return report_error("no image sent.")
-
 
 
 @app.route("/login", methods=["GET", "POST"])
