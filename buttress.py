@@ -175,7 +175,7 @@ def extract_strings(newfiles):
         text = pytesseract.image_to_string(newfiles[j], config=config_init)
         data = pytesseract.image_to_data(newfiles[j], config=config_init, output_type=Output.DICT)
 
-        if "\u00BC" in text.lower() or "\u00BD" in text.lower():
+        if "\u00BC" in text.lower() or "\u00BD" in text.lower() or "sea salt" in text.lower():
             if check_conf_score(data, 0):
                 string_list.append(text)
             
