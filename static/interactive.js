@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		// This is where we'll store the files before submitting via post to server
 		let fileList = [];
 
-		// Here's where we actually update the html
+		// Change forms to allow user to upload photo
 		document.querySelector('#scan-form').innerHTML =  '<label for="file-upload" class="btn btn-dark">Browse</label> \
 		<input type="file"  accept="image/*" id="file-upload" multiple name="image" style="display: none"> \
 		<button type="submit" class="btn btn-dark" id="upload-button">Upload</button>';
@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			// Add selected files to file list
 			for (let i = 0; i < fileUpload.files.length; i++) {
+				fileUpload.files[i].name = `image${i}.jpg`;
 				fileList.push(fileUpload.files[i]);
 			}
 
@@ -38,8 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
 				console.log(fileList[i]);
 			}
 			console.log(typeof fileList);
+			// END DEBUGGING
 
-			// We'll need to listen for the upload button being clicked 
 			let fileSubmit = document.querySelector('#upload-button')
 
 			// If upload button is clicked, send the title and file(s) to the server
@@ -51,8 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
 				// Add items to FormData object: the recipe's title and the images
 				formData.append('title', title);
 
-				for (const file of fileList) {
-					formData.append('image', file);
+				for (let i = 0; i < fileList.length; i++) {
+					formData.append('image', fileList[i], `image${i}.jpg`);
 				}
 
 				for (var entry of formData) {
