@@ -169,8 +169,8 @@ def extract_strings(newfiles):
         # scripts (https://github.com/Shreeshrii/tess4training), which are based on Ray Smith's tutorials
         # (https://tesseract-ocr.github.io/tessdoc/tess4/TrainingTesseract-4.00.html).
         # The finetuned data allows 'recipe' to accurately recognize fractions.
-        config_init = r"--psm 11 --oem 1"
-        config_second = r"--psm 6 --oem 1"
+        config_init = r"--psm 11 --oem 1 -l eng_layer"
+        config_second = r"--psm 6 --oem 1 -l eng_layer"
 
         text = pytesseract.image_to_string(newfiles[j], config=config_init)
         data = pytesseract.image_to_data(newfiles[j], config=config_init, output_type=Output.DICT)
